@@ -1837,107 +1837,154 @@
             }
         }
 
-        function addAssignment(e) {
-            e.preventDefault();
-            const idInput = document.getElementById('task-id');
-            const isEdit = idInput.value !== '';
-            const className = classSelect.options[classSelect.selectedIndex] ? classSelect.options[classSelect.selectedIndex].text : 'Unknown';
-            const isAllDay = document.getElementById('all-day-toggle').checked;
+        // REPLACE your existing addAssignment function with this:
+function addAssignment(e) {
+    e.preventDefault();
+    const idInput = document.getElementById('task-id');
+    const isEdit = idInput.value !== '';
+    const className = classSelect.options[classSelect.selectedIndex] ? classSelect.options[classSelect.selectedIndex].text : 'Unknown';
+    const isAllDay = document.getElementById('all-day-toggle').checked;
 
-            if (isEdit) {
-                const id = parseFloat(idInput.value);
-                const index = assignments.findIndex(a => a.id === id);
-                if (index !== -1) {
-                    assignments[index].className = className;
-                    assignments[index].classId = classSelect.value;
-                    assignments[index].category = categorySelect.value;
-                    assignments[index].title = document.getElementById('task-title').value;
-                    assignments[index].dueDate = document.getElementById('due-date').value;
-                    assignments[index].priority = document.getElementById('priority').value;
-                    assignments[index].notes = document.getElementById('notes').value;
-                    assignments[index].allDay = isAllDay;
-                }
-                idInput.value = '';
-                submitTaskBtn.innerText = 'Add Assignment';
-                cancelEditBtn.style.display = 'none';
-                addTaskCard.classList.remove('edit-mode');
-                addTaskHeader.innerText = 'Add New Assignment';
-            } else {
-                const newAssignment = {
-                    id: Date.now(), 
-                    className: className,
-                    classId: classSelect.value,
-                    category: categorySelect.value,
-                    title: document.getElementById('task-title').value,
-                    dueDate: document.getElementById('due-date').value,
-                    priority: document.getElementById('priority').value,
-                    notes: document.getElementById('notes').value,
-                    completed: false,
-                    allDay: isAllDay,
-                    createdAt: new Date().toISOString()
-                };
-                assignments.push(newAssignment);
-            }
-            
-            // Reset filters when adding new stuff
-            currentFilter = 'all';
-            document.getElementById('all-day-toggle').checked = false;
-            toggleAllDay();
-            
-            saveToLocal(); form.reset(); populateClassSelect(); switchTab('pending');
-        }
-
-        function editAssignment(id) {
-            const task = assignments.find(a => a.id === id);
-            if (task) {
-                document.getElementById('task-id').value = task.id;
-                document.getElementById('task-title').value = task.title;
-                document.getElementById('priority').value = task.priority;
-                document.getElementById('notes').value = task.notes;
-                
-                const allDayToggle = document.getElementById('all-day-toggle');
-                allDayToggle.checked = !!task.allDay;
-                toggleAllDay();
-                
-                document.getElementById('due-date').value = task.dueDate;
-
-                if (task.classId !== undefined) {
-                    classSelect.value = task.classId;
-                    updateCategorySelect();
-                    categorySelect.value = task.category || '';
-                }
-                
-                // UI Updates for Edit Mode
-                submitTaskBtn.innerText = 'Save Changes';
-                cancelEditBtn.style.display = 'inline-block';
-                addTaskCard.classList.add('edit-mode');
-                addTaskHeader.innerText = 'Edit Assignment';
-                
-                // Ensure we see the form (in case filtered)
-                clearFilters(); 
-                switchTab('pending'); 
-                document.getElementById('task-title').focus();
-            }
+    if (isEdit) {
+        // EDIT MODE
+        const id = parseFloat(idInput.value); // Ensure ID is a number
+        const index = assignments.findIndex(a => a.id === id);
+        
+        if (index !== -1) {
+            // Update existing assignment
+            assignments[index].className = className;
+            assignments[index].classId = classSelect.value;
+            assignments[index].category = categorySelect.value;
+            assignments[index].title = document.getElementById('task-title').value;
+            assignments[index].dueDate = document.getElementById('due-date').value;
+            assignments[index].priority = document.getElementById('priority').value;
+            assignments[index].notes = document.getElementById('notes').value;
+            assignments[index].allDay = isAllDay;
         }
         
-        function cancelEdit() {
-            form.reset();
-            document.getElementById('task-id').value = '';
-            submitTaskBtn.innerText = 'Add Assignment';
-            cancelEditBtn.style.display = 'none';
-            addTaskCard.classList.remove('edit-mode');
-            addTaskHeader.innerText = 'Add New Assignment';
+        // Reset form to "Add" mode
+        cancelEdit();
+    } else {
+        // ADD MODE
+        const newAssignment = {
+            id: Date.now(), // Generate a unique numeric ID based on timestamp
+            className: className,
+            classId: classSelect.value,
+            category: categorySelect.value,
+            title: document.getElementById('task-title').value,
+            dueDate: document.getElementById('due-date').value,
+            priority: document.getElementById('priority').value,
+            notes: document.getElementById('notes').value,
+            completed: false,
+            allDay: isAllDay,
+            createdAt: new Date().toISOString()
+        };
+        assignments.push(newAssignment);
+    }
+    
+    // Reset filters if needed (optional, keeps view fresh)
+    currentFilter = 'all';
+    
+    saveToLocal(); 
+    form.reset(); 
+    populateClassSelect(); 
+    switchTab('pending');
+}
+
+       // REPLACE your existing editAssignment and cancelEdit functions with these:
+function editAssignment(id) {
+    // Ensure comparison works by converting ID to number if needed
+    // The find() method needs to match the type of a.id (which is a number from Date.now())
+    const task = assignments.find(a => a.id == id); 
+    
+    if (task) {
+        // Populate hidden ID field
+        document.getElementById('task-id').value = task.id;
+        
+        // Populate visible fields
+        document.getElementById('task-title').value = task.title;
+        document.getElementById('priority').value = task.priority;
+        document.getElementById('notes').value = task.notes;
+        
+        // Handle All Day Toggle
+        const allDayToggle = document.getElementById('all-day-toggle');
+        allDayToggle.checked = !!task.allDay;
+        toggleAllDay(); // Trigger the UI update for the date input type
+        
+        document.getElementById('due-date').value = task.dueDate;
+
+        if (task.classId !== undefined) {
+            classSelect.value = task.classId;
+            updateCategorySelect();
+            categorySelect.value = task.category || '';
+        }
+        
+        // UI Updates for Edit Mode
+        const submitBtn = document.getElementById('submit-task-btn');
+        const cancelBtn = document.getElementById('cancel-edit-btn');
+        const card = document.getElementById('add-task-card');
+        const header = document.getElementById('add-task-header');
+
+        if(submitBtn) submitBtn.innerText = 'Save Changes';
+        if(cancelBtn) cancelBtn.style.display = 'inline-block';
+        if(card) card.classList.add('edit-mode');
+        if(header) header.innerText = 'Edit Assignment';
+        
+        // Ensure we see the form (in case filtered)
+        clearFilters(); 
+        switchTab('pending'); 
+        document.getElementById('task-title').focus();
+        
+        // Scroll to the form so the user sees it
+        card.scrollIntoView({ behavior: 'smooth' });
+    } else {
+        console.error("Task not found with ID:", id);
+    }
+}
+
+function cancelEdit() {
+    form.reset();
+    document.getElementById('task-id').value = '';
+    
+    const submitBtn = document.getElementById('submit-task-btn');
+    const cancelBtn = document.getElementById('cancel-edit-btn');
+    const card = document.getElementById('add-task-card');
+    const header = document.getElementById('add-task-header');
+
+    if(submitBtn) submitBtn.innerText = 'Add Assignment';
+    if(cancelBtn) cancelBtn.style.display = 'none';
+    if(card) card.classList.remove('edit-mode');
+    if(header) header.innerText = 'Add New Assignment';
+    
+    // Reset all day toggle to default state
+    document.getElementById('all-day-toggle').checked = false;
+    toggleAllDay();
+}
+
+        // REPLACE your existing deleteAssignment function with this:
+function deleteAssignment(id) { 
+    // Ensure ID is a number since onclick in HTML might pass it differently
+    // but the original ID was created with Date.now() (a number)
+    const numId = Number(id); 
+    
+    if (confirm('Are you sure you want to delete this assignment?')) { 
+        // Filter out the assignment with the matching ID
+        const initialLength = assignments.length;
+        assignments = assignments.filter(a => a.id != numId); 
+        
+        if (assignments.length === initialLength) {
+             console.warn("Delete failed: No assignment found with ID", numId);
         }
 
-        function deleteAssignment(id) { 
-            const numId = Number(id);
-            if (confirm('Are you sure you want to delete this assignment?')) { 
-                assignments = assignments.filter(a => a.id !== numId); 
-                // If deleting while editing, cancel edit mode
-                if(document.getElementById('task-id').value == numId) cancelEdit();
-                saveToLocal(); 
-            } 
+        // If deleting the item currently being edited, cancel edit mode
+        const currentEditId = document.getElementById('task-id').value;
+        if(currentEditId && Number(currentEditId) === numId) {
+            cancelEdit();
         }
+        
+        saveToLocal(); 
+    } 
+}
         
         function toggleComplete(id) { const task = assignments.find(a => a.id === id); if (task) { task.completed = !task.completed; if (task.completed) triggerConfetti(); saveToLocal(); } }
         function triggerConfetti() { confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 }, colors: ['#e94560', '#0f3460', '#ffffff'] }); }
@@ -2075,7 +2122,8 @@
         }
 
         function createTaskElement(task, isCompleted = false) {
-            const div = document.createElement('div'); div.className = `task-item glass ${isCritical(task) && !isCompleted ? 'glow-critical' : ''}`;
+            const div = document.createElement('div'); 
+            div.className = `task-item glass ${isCritical(task) && !isCompleted ? 'glow-critical' : ''}`;
             
             let dateDisplay;
             if (task.allDay) {
@@ -2090,7 +2138,10 @@
             const catLabel = task.category ? `<span style="font-size:0.8rem; background:rgba(255,255,255,0.1); padding:2px 6px; border-radius:4px; margin-left:0.5rem;">${task.category}</span>` : '';
             const aiBtn = !isCompleted ? `<button onclick="askAI(${task.id}); event.stopPropagation();" class="ai-btn" title="Generate Study Plan">✨</button>` : '';
             
-            // Note on delete: prevent propagation to avoid triggering double click or edit
+            // The critical part is ensuring task.id is treated correctly. 
+            // Since task.id is a number (from Date.now()), passing it directly like ${task.id} works fine 
+            // because JS will interpret it as a number in the function call.
+            
             div.innerHTML = `<div class="task-info"><h4>${task.title} <span style="font-weight:400; color:var(--text-muted)">(${task.className})</span>${catLabel}</h4><div class="task-meta"><span>📅 ${dateDisplay}</span><span class="priority-badge p-${task.priority}">${task.priority}</span></div>${task.notes ? `<p style="margin-top:0.5rem; font-size:0.9rem; color:var(--text-muted)">${task.notes}</p>` : ''}</div><div class="task-actions" style="display:flex; align-items:center;">${aiBtn}<button onclick="toggleComplete(${task.id}); event.stopPropagation();" class="btn-icon btn-check" title="${isCompleted ? 'Mark Incomplete' : 'Complete'}">${isCompleted ? '↩️' : '✅'}</button><button onclick="editAssignment(${task.id}); event.stopPropagation();" class="btn-icon" title="Edit">✏️</button><button onclick="deleteAssignment(${task.id}); event.stopPropagation();" class="btn-icon btn-delete" title="Delete">🗑️</button></div>`;
             return div;
         }
@@ -2682,6 +2733,7 @@
 </body>
 
 </html>
+
 
 
 
