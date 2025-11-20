@@ -1986,7 +1986,26 @@ function deleteAssignment(id) {
     } 
 }
         
-        function toggleComplete(id) { const task = assignments.find(a => a.id === id); if (task) { task.completed = !task.completed; if (task.completed) triggerConfetti(); saveToLocal(); } }
+        function toggleComplete(id) {
+            // Convert ID to number to match stored ID type
+            const numId = Number(id);
+            
+            const task = assignments.find(a => a.id === numId);
+            
+            if (task) {
+                task.completed = !task.completed;
+                if (task.completed) triggerConfetti();
+                
+                saveToLocal();
+                
+                // Force re-render of the current view to reflect changes immediately
+                // If we are on 'pending' tab, renderPending(). If 'completed', renderCompleted().
+                // Or just renderAll() to be safe.
+                renderAll();
+            } else {
+                console.error("Task not found for completion toggle:", id);
+            }
+        }
         function triggerConfetti() { confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 }, colors: ['#e94560', '#0f3460', '#ffffff'] }); }
 
         // Filter Logic
@@ -2733,6 +2752,7 @@ function deleteAssignment(id) {
 </body>
 
 </html>
+
 
 
 
