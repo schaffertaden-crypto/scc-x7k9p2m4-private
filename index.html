@@ -537,11 +537,13 @@
             align-items: center;
         }
 
-        .category-row input {
-            padding: 0.6rem 1rem;
-            font-size: 0.85rem;
-            border-radius: 8px;
-        }
+      .category-row input {
+    padding: 0.6rem 0;  /* Removed side padding */
+    font-size: 0.85rem;
+    border-radius: 8px;
+    text-align: center; /* Centers the number so it looks better */
+    min-width: 0;       /* Prevents the browser from forcing a minimum width that causes overflow */
+}
 
         .cat-name {
             flex: 2;
@@ -2678,3 +2680,4 @@
 </body>
 
 </html>
+
