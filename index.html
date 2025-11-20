@@ -2614,16 +2614,12 @@
                             inlineData: {
                                 mimeType: aiAttachment.mimeType,
                                 data: aiAttachment.data
-                            },
-                            // v1alpha feature: High resolution for images
-                            mediaResolution: {
-                                level: "media_resolution_high"
                             }
                         });
                     }
 
-                    // Updated API version to v1alpha and model to gemini-3-pro-preview
-                    const response = await fetch(`https://generativelanguage.googleapis.com/v1alpha/models/gemini-3-pro-preview:generateContent?key=${apiKey}`, {
+                    // Updated API version to v1beta and model to gemini-2.5-pro
+                 const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${apiKey}`, {
                         
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -2686,6 +2682,7 @@
 </body>
 
 </html>
+
 
 
 
