@@ -1,0 +1,2680 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Command Center</title>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ical.js/1.5.0/ical.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0f0f1a;
+            --sidebar-bg: rgba(15, 15, 26, 0.7);
+            --card-bg: rgba(255, 255, 255, 0.03);
+            --text-main: #ffffff;
+            --text-muted: #94a3b8;
+            --accent-color: #f43f5e;
+            --highlight: #3b82f6;
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            --priority-low: #10b981;
+            --priority-medium: #3b82f6;
+            --priority-high: #f59e0b;
+            --priority-critical: #ef4444;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--accent-color);
+        }
+
+        body {
+            background-color: var(--bg-color);
+            background-image:
+                radial-gradient(circle at 10% 20%, rgba(244, 63, 94, 0.1) 0%, transparent 20%),
+                radial-gradient(circle at 90% 80%, rgba(59, 130, 246, 0.1) 0%, transparent 20%);
+            color: var(--text-main);
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .glass {
+            background: var(--card-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            box-shadow: var(--glass-shadow);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                border-color 0.3s ease;
+        }
+
+        .glass:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.5);
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+
+        .app-container {
+            display: flex;
+            height: 100%;
+        }
+
+        .sidebar {
+            width: 260px;
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+            z-index: 10;
+            border-right: 1px solid var(--glass-border);
+            background: var(--sidebar-bg);
+        }
+
+        .logo h2 {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: white;
+            letter-spacing: -0.5px;
+            background: linear-gradient(45deg, #fff, var(--text-muted));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        nav ul {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        nav li {
+            padding: 0.8rem 1rem;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            font-weight: 500;
+            color: var(--text-muted);
+            border: 1px solid transparent;
+        }
+
+        nav li:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: white;
+        }
+
+        nav li.active {
+            background: rgba(244, 63, 94, 0.1);
+            color: var(--accent-color);
+            border-color: rgba(244, 63, 94, 0.2);
+            font-weight: 600;
+        }
+
+        main {
+            flex: 1;
+            padding: 2.5rem;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .view {
+            display: none;
+            animation: fadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .view.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        header {
+            display: flex;
+            flex-direction: column; /* Changed to column to handle stacking */
+            justify-content: flex-start;
+            align-items: flex-start; 
+            margin-bottom: 2.5rem;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            letter-spacing: -1px;
+            margin-bottom: 0.5rem;
+        }
+        
+        /* Greeting Style */
+        #dashboard-greeting {
+            font-size: 1.1rem;
+            color: var(--accent-color);
+            margin-bottom: 0.2rem;
+            font-weight: 500;
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .stat-card {
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            position: relative;
+            overflow: hidden;
+            cursor: pointer;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, var(--accent-color), var(--highlight));
+            opacity: 0.5;
+        }
+
+        .stat-number {
+            font-size: 3rem;
+            font-weight: 700;
+            color: white;
+            font-family: 'JetBrains Mono', monospace;
+            letter-spacing: -1px;
+        }
+
+        .stat-card h3 {
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        .add-task-card {
+            margin-bottom: 2rem;
+            padding: 2rem;
+            transition: all 0.3s ease;
+        }
+        
+        .add-task-card.edit-mode {
+            border-color: var(--highlight);
+            background: rgba(59, 130, 246, 0.05);
+        }
+        .add-task-card.edit-mode h3::after {
+            content: ' (Editing)';
+            font-size: 0.8em;
+            color: var(--highlight);
+        }
+
+        .form-row {
+            display: flex;
+            gap: 1.5rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+            flex: 1;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            font-weight: 500;
+            margin-left: 4px;
+        }
+
+        input,
+        select,
+        textarea {
+            width: 100%;
+            padding: 0.8rem 1.2rem;
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--glass-border);
+            border-radius: 50px;
+            color: white;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+        }
+
+        input[type="checkbox"] {
+            width: auto;
+            margin-right: 0.5rem;
+        }
+
+        textarea {
+            border-radius: 20px;
+        }
+
+        input:focus,
+        select:focus,
+        textarea:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 4px rgba(244, 63, 94, 0.1);
+            background: rgba(0, 0, 0, 0.4);
+        }
+
+        .btn-primary {
+            background: var(--accent-color);
+            color: white;
+            border: none;
+            padding: 0.8rem 2rem;
+            border-radius: 50px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+            width: 100%;
+            box-shadow: 0 4px 15px rgba(244, 63, 94, 0.3);
+            text-align: center;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(244, 63, 94, 0.4);
+            filter: brightness(1.1);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 1px solid var(--glass-border);
+            padding: 0.8rem 2rem;
+            border-radius: 50px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+            width: 100%;
+            text-align: center;
+            box-shadow: none;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .tasks-container {
+            display: grid;
+            gap: 1rem;
+        }
+
+        .task-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.2rem 1.5rem;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            border-left: 4px solid transparent;
+            cursor: pointer;
+        }
+
+        .task-item:hover {
+            transform: translateX(5px);
+            background: rgba(255, 255, 255, 0.06);
+        }
+
+        .task-item h4 {
+            font-weight: 600;
+            font-size: 1.1rem;
+            margin-bottom: 0.3rem;
+        }
+
+        .task-item.glow-critical {
+            border-left-color: var(--priority-critical);
+            background: linear-gradient(90deg, rgba(239, 68, 68, 0.1) 0%, transparent 100%);
+        }
+
+        .priority-badge {
+            padding: 0.3rem 0.8rem;
+            border-radius: 50px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .p-Low {
+            background: rgba(16, 185, 129, 0.15);
+            color: var(--priority-low);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .p-Medium {
+            background: rgba(59, 130, 246, 0.15);
+            color: var(--priority-medium);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+        }
+
+        .p-High {
+            background: rgba(245, 158, 11, 0.15);
+            color: var(--priority-high);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+        }
+
+        .p-Critical {
+            background: rgba(239, 68, 68, 0.15);
+            color: var(--priority-critical);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 2px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            overflow: hidden;
+            border: 1px solid var(--glass-border);
+        }
+
+        .calendar-day {
+            background: rgba(15, 15, 26, 0.8);
+            min-height: 120px;
+            padding: 0.8rem;
+            transition: background 0.2s;
+            cursor: pointer; /* Show it's interactive */
+        }
+
+        .calendar-day:hover {
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .day-number {
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            display: block;
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--text-muted);
+        }
+
+        .cal-task {
+            font-size: 0.7rem;
+            padding: 4px 8px;
+            margin-bottom: 4px;
+            border-radius: 4px;
+            background: rgba(59, 130, 246, 0.2);
+            color: #93c5fd;
+            border-left: 2px solid var(--highlight);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .cal-task:hover {
+            filter: brightness(1.2);
+            transform: scale(1.02);
+        }
+
+        .timer-container {
+            margin: 2rem auto;
+            padding: 4rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            max-width: 600px;
+            position: relative;
+        }
+
+        .timer-container::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: 16px;
+            padding: 2px;
+            background: linear-gradient(45deg, transparent, var(--accent-color), transparent);
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+            pointer-events: none;
+        }
+
+        .timer-display {
+            font-size: 7rem;
+            font-weight: 700;
+            font-family: 'JetBrains Mono', monospace;
+            margin-bottom: 2rem;
+            background: linear-gradient(180deg, #fff, #94a3b8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.1));
+        }
+
+        .timer-controls {
+            display: flex;
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+        }
+
+        .timer-settings {
+            width: 100%;
+            border-top: 1px solid var(--glass-border);
+            padding-top: 2rem;
+            text-align: left;
+        }
+
+        .grades-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 2rem;
+        }
+
+        .grade-card {
+            padding: 2rem;
+        }
+
+        .grade-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        .grade-score {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--highlight);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .category-row {
+            display: flex;
+            gap: 0.8rem;
+            margin-bottom: 0.8rem;
+            align-items: center;
+        }
+
+        .category-row input {
+            padding: 0.6rem 1rem;
+            font-size: 0.85rem;
+            border-radius: 8px;
+        }
+
+        .cat-name {
+            flex: 2;
+        }
+
+        .cat-weight {
+            flex: 1;
+        }
+
+        .cat-score {
+            flex: 1;
+        }
+
+        .music-player {
+            display: flex;
+            flex-direction: column;
+            gap: 1.2rem;
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%);
+        }
+
+        .player-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .album-art {
+            width: 56px;
+            height: 56px;
+            background: linear-gradient(135deg, var(--accent-color), var(--highlight));
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .track-details h4 {
+            font-size: 0.95rem;
+            margin-bottom: 2px;
+        }
+
+        .track-details p {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .player-controls {
+            display: flex;
+            justify-content: center;
+            gap: 0.8rem;
+        }
+
+        .player-scrubber,
+        .player-volume {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .player-scrubber input[type="range"],
+        .player-volume input[type="range"] {
+            flex: 1;
+            height: 4px;
+            padding: 0;
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            border-radius: 2px;
+            appearance: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 12px;
+            height: 12px;
+            background: white;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.5);
+            background: var(--accent-color);
+        }
+
+        .drop-zone {
+            border: 2px dashed var(--glass-border);
+            border-radius: 20px;
+            padding: 3rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: rgba(255, 255, 255, 0.01);
+        }
+
+        .drop-zone:hover {
+            border-color: var(--accent-color);
+            background: rgba(244, 63, 94, 0.05);
+            transform: scale(1.02);
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            z-index: 100;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(8px);
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            width: 90%;
+            max-width: 600px;
+            padding: 2.5rem;
+            max-height: 85vh;
+            display: flex;
+            flex-direction: column;
+            background: #1e1e2e;
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+            overflow-y: auto;
+        }
+        
+        .modal-actions {
+            display: flex;
+            flex-direction: column-reverse; /* Stack, with Primary on bottom naturally if order in HTML is Close then Save. If Save then Close, use column. Let's check HTML order. */
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        /* Floating Action Button (FAB) Menu */
+        .fab-container {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            z-index: 100;
+            display: flex;
+            flex-direction: column-reverse; /* Stack upwards */
+            align-items: center;
+            gap: 12px;
+        }
+
+        .fab-main {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: var(--accent-color);
+            color: white;
+            border: 1px solid rgba(255,255,255,0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            cursor: pointer;
+            box-shadow: 0 8px 25px rgba(244, 63, 94, 0.4);
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            position: relative;
+            z-index: 2;
+        }
+
+        .fab-main:hover {
+            transform: scale(1.1);
+        }
+
+        .fab-main.active {
+            transform: rotate(45deg);
+            background: #ef4444;
+        }
+
+        .fab-menu-item {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: rgba(30, 41, 59, 0.9);
+            backdrop-filter: blur(8px);
+            border: 1px solid var(--glass-border);
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 1.2rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            opacity: 0;
+            transform: translateY(20px) scale(0.8);
+            pointer-events: none;
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            position: relative;
+        }
+
+        .fab-menu-item:hover {
+            background: var(--highlight);
+            color: white;
+            transform: scale(1.1) !important;
+        }
+
+        /* Tooltip for FAB items */
+        .fab-menu-item::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            right: 60px; 
+            left: auto;
+            background: rgba(0,0,0,0.8);
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s;
+            color: white;
+        }
+        
+        .fab-menu-item:hover::after {
+            opacity: 1;
+        }
+
+        .fab-container.open .fab-menu-item {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+            pointer-events: all;
+        }
+
+        /* Stagger animation delays */
+        .fab-container.open .fab-menu-item:nth-child(2) { transition-delay: 0.05s; }
+        .fab-container.open .fab-menu-item:nth-child(3) { transition-delay: 0.1s; }
+        .fab-container.open .fab-menu-item:nth-child(4) { transition-delay: 0.15s; }
+        .fab-container.open .fab-menu-item:nth-child(5) { transition-delay: 0.2s; }
+
+
+        .version-tag {
+            position: fixed;
+            bottom: 12px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: rgba(255, 255, 255, 0.15);
+            font-size: 0.75rem;
+            pointer-events: none;
+            z-index: 90;
+            font-family: 'JetBrains Mono', monospace;
+            letter-spacing: 2px;
+        }
+
+        .btn-icon {
+            background: none;
+            border: none;
+            font-size: 1.2rem;
+            cursor: pointer;
+            padding: 0.4rem;
+            transition: all 0.2s;
+            border-radius: 50%;
+            color: var(--text-muted);
+        }
+
+        .ytp-button {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 0.5rem;
+            transition: all 0.2s ease;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+        }
+
+        .ytp-button svg {
+            transition: all 0.2s ease;
+        }
+
+        .ytp-button:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .ytp-button:active {
+            background: rgba(255, 255, 255, 0.25);
+            transform: scale(0.95);
+        }
+
+        .btn-icon:hover {
+            transform: scale(1.2);
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+
+        .btn-sm {
+            padding: 0.5rem 1.2rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            color: white;
+            border-radius: 50px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+        }
+
+        .btn-sm:hover {
+            background: rgba(255, 255, 255, 0.15);
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .btn-sm.danger:hover {
+            background: rgba(239, 68, 68, 0.2);
+            border-color: rgba(239, 68, 68, 0.5);
+            color: #fca5a5;
+        }
+
+        .ai-btn {
+            background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+            border: none;
+            border-radius: 50%;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 1rem;
+            margin-right: 0.8rem;
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            box-shadow: 0 4px 10px rgba(168, 85, 247, 0.3);
+            color: white;
+        }
+
+        .ai-btn:hover {
+            transform: scale(1.15) rotate(15deg);
+            box-shadow: 0 0 15px rgba(168, 85, 247, 0.6);
+        }
+
+        .ai-content {
+            white-space: pre-wrap;
+            line-height: 1.7;
+            color: #e2e8f0;
+            font-size: 1.05rem;
+        }
+
+        .ai-loading {
+            text-align: center;
+            font-style: italic;
+            color: var(--text-muted);
+            padding: 2rem;
+        }
+        
+        .user-msg {
+            background: rgba(255,255,255,0.1);
+            padding: 1rem;
+            border-radius: 12px 12px 0 12px;
+            margin-bottom: 1rem;
+            align-self: flex-end;
+            max-width: 80%;
+        }
+        
+        .ai-msg {
+            background: rgba(168, 85, 247, 0.15);
+            padding: 1rem;
+            border-radius: 12px 12px 12px 0;
+            margin-bottom: 1rem;
+            align-self: flex-start;
+            max-width: 80%;
+            border: 1px solid rgba(168, 85, 247, 0.3);
+        }
+        
+        /* Calendar Filter Pills */
+        .calendar-filters {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            margin-bottom: 1rem;
+        }
+        
+        .cal-filter-pill {
+            font-size: 0.8rem;
+            padding: 0.3rem 0.8rem;
+            border-radius: 50px;
+            background: rgba(255,255,255,0.1);
+            cursor: pointer;
+            border: 1px solid transparent;
+            transition: all 0.2s;
+        }
+        
+        .cal-filter-pill.active {
+            background: var(--highlight);
+            color: white;
+            border-color: rgba(255,255,255,0.3);
+        }
+        
+        .cal-filter-pill:hover {
+            background: rgba(255,255,255,0.2);
+        }
+
+        #datetime-display {
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .datetime-time {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-right: 1rem;
+            color: white;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="app-container">
+        <aside class="sidebar glass">
+            <div class="logo">
+                <h2>Command Center</h2>
+            </div>
+            <nav>
+                <ul>
+                    <li data-tab="dashboard" class="active">📊 Dashboard</li>
+                    <li data-tab="pending">📝 Assignments</li>
+                    <li data-tab="grades">🎓 Grades</li>
+                    <li data-tab="calendar">📅 Calendar</li>
+                    <li data-tab="timer">⏱️ Study Timer</li>
+                    <li data-tab="completed">✅ History</li>
+                </ul>
+            </nav>
+            <div class="music-player glass" style="padding: 1rem; margin-top: auto;">
+                <div class="player-info">
+                    <div class="album-art">🎵</div>
+                    <div class="track-details">
+                        <h4 id="track-title">Track Title</h4>
+                        <p id="track-artist">Artist</p>
+                    </div>
+                </div>
+                <div class="player-controls">
+                    <!-- Rewind 10s -->
+                    <button class="ytp-button" id="rewind-btn" title="Rewind 10s">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M11 16.07V7.93C11 7.46 10.44 7.22 10.1 7.56L6.03 11.63C5.83 11.83 5.83 12.17 6.03 12.37L10.1 16.44C10.44 16.78 11 16.54 11 16.07ZM18 16.07V7.93C18 7.46 17.44 7.22 17.1 7.56L13.03 11.63C12.83 11.83 12.83 12.17 13.03 12.37L17.1 16.44C17.44 16.78 18 16.54 18 16.07Z" fill="white"/>
+                        </svg>
+                    </button>
+
+                    <button class="ytp-button" id="play-pause" title="Play">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" class="play-icon">
+                            <path d="M8 5v14l11-7z" fill="white" />
+                        </svg>
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" class="pause-icon"
+                            style="display:none;">
+                            <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" fill="white" />
+                        </svg>
+                    </button>
+
+                    <!-- Forward 10s -->
+                    <button class="ytp-button" id="forward-btn" title="Forward 10s">
+                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M5.5 7.93V16.07C5.5 16.54 6.06 16.78 6.4 16.44L10.47 12.37C10.67 12.17 10.67 11.83 10.47 11.63L6.4 7.56C6.06 7.22 5.5 7.46 5.5 7.93ZM12.5 7.93V16.07C12.5 16.54 13.06 16.78 13.4 16.44L17.47 12.37C17.67 12.17 17.67 11.83 17.47 11.63L13.4 7.56C13.06 7.22 12.5 7.46 12.5 7.93Z" fill="white"/>
+                        </svg>
+                    </button>
+                </div>
+                <div class="player-scrubber"><span id="current-time">0:00</span><input type="range" id="seek-slider"
+                        value="0" max="100"><span id="duration">0:00</span></div>
+                <div class="player-volume">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0;">
+                        <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z" fill="var(--text-muted)"/>
+                    </svg>
+                    <input type="range" id="volume-slider" value="100" max="100">
+                </div>
+            </div>
+        </aside>
+        <main>
+            <div id="datetime-display"
+                style="position: absolute; top: 2rem; right: 2rem; text-align: right; font-size: 1.2rem; color: var(--text-muted);">
+            </div>
+            <section id="dashboard" class="view active">
+                <header>
+                    <div id="dashboard-greeting"></div>
+                    <h1>Dashboard</h1>
+                </header>
+                <div class="dashboard-grid">
+                    <div class="stat-card glass" id="due-today-card" onclick="filterView('today')" title="Click to see tasks due today">
+                        <h3>Due Today</h3>
+                        <div class="stat-number" id="due-today-count">0</div>
+                    </div>
+                    <div class="stat-card glass" id="due-week-card" onclick="filterView('week')" title="Click to see tasks due this week">
+                        <h3>Due This Week</h3>
+                        <div class="stat-number" id="due-week-count">0</div>
+                    </div>
+                    <div class="stat-card glass" id="weekly-progress-card" onclick="goToHistory('week')" title="View completed tasks this week">
+                        <h3>Weekly Progress</h3>
+                        <div style="margin-top: 1rem;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                                <span>Completion</span><span id="progress-text">0%</span>
+                            </div>
+                            <div
+                                style="background: rgba(255,255,255,0.1); height: 8px; border-radius: 4px; overflow: hidden;">
+                                <div id="weekly-progress"
+                                    style="height: 100%; background: linear-gradient(90deg, #4caf50, #8bc34a); width: 0%; transition: width 0.5s ease;">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div style="margin-top: 2rem; display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+                    <div class="glass" style="padding: 1.5rem; cursor: pointer;" onclick="filterView('urgent')" title="See urgent tasks">
+                        <h3>🔥 Urgent Tasks</h3>
+                        <ul id="urgent-tasks-list" style="list-style: none; margin-top: 1rem;"></ul>
+                    </div>
+                    <div class="glass" style="padding: 1.5rem; cursor: pointer;" onclick="filterView('next10')" title="See upcoming tasks">
+                        <h3>📅 Next Events</h3>
+                        <ul id="next-events-list" style="list-style: none; margin-top: 1rem;"></ul>
+                    </div>
+                </div>
+                <div class="glass"
+                    style="padding: 1.5rem; margin-top: 2rem; display: flex; align-items: center; justify-content: space-between; cursor: pointer;" onclick="switchTab('timer')" title="Go to Study Timer">
+                    <div>
+                        <h3>⏱️ Mini Timer</h3>
+                        <div id="mini-timer-display"
+                            style="font-size: 2rem; font-weight: bold; font-family: monospace;">25:00</div>
+                    </div>
+                    <div>
+                        <button id="mini-timer-toggle" class="btn-primary" style="width: auto; display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.8rem 1.2rem;" onclick="event.stopPropagation()">
+                            <svg class="play-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M8 5v14l11-7z" fill="currentColor"/></svg>
+                            <svg class="pause-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:none;"><path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" fill="currentColor"/></svg>
+                        </button>
+                        <button id="mini-timer-reset" class="btn-sm" style="margin-left: 0.5rem; display: inline-flex; align-items: center; padding: 0.8rem;" onclick="event.stopPropagation(); resetTimer(true);">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z" fill="currentColor"/></svg>
+                        </button>
+                    </div>
+                </div>
+            </section>
+            <section id="pending" class="view">
+                <header>
+                    <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                        <h1>Assignments</h1>
+                        <div id="filter-status-container" style="display:none; align-items: center; gap: 10px;">
+                            <span id="filter-status-text" style="color: var(--text-muted); font-size: 0.9rem;"></span>
+                            <button class="btn-sm" style="background: var(--accent-color); padding: 0.3rem 0.8rem; font-size: 0.8rem;" onclick="clearFilters()">Clear</button>
+                        </div>
+                    </div>
+                </header>
+                <div id="add-task-card" class="add-task-card glass">
+                    <h3 id="add-task-header">Add New Assignment</h3>
+                    <form id="add-task-form" style="margin-top: 1rem;">
+                        <input type="hidden" id="task-id">
+                        <div class="form-row">
+                            <div class="form-group"><label for="class-select">Class</label><select id="class-select"
+                                    required class="glass-input"></select></div>
+                            <div class="form-group"><label for="category-select">Category</label><select
+                                    id="category-select" class="glass-input">
+                                    <option value="">None</option>
+                                </select></div>
+                        </div>
+                        <div class="form-group"><label for="task-title">Assignment Title</label><input type="text"
+                                id="task-title" required placeholder="e.g. Chapter 5 Exercises">
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="due-date">Due Date</label>
+                                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 5px;">
+                                    <input type="checkbox" id="all-day-toggle" onchange="toggleAllDay()">
+                                    <label for="all-day-toggle" style="margin:0; cursor:pointer; font-size: 0.8rem;">All Day</label>
+                                </div>
+                                <input type="datetime-local" id="due-date" required>
+                            </div>
+                            <div class="form-group"><label for="priority">Priority</label><select id="priority">
+                                    <option value="Low">Low</option>
+                                    <option value="Medium" selected>Medium</option>
+                                    <option value="High">High</option>
+                                    <option value="Critical">Critical</option>
+                                </select></div>
+                        </div>
+                        <div class="form-group"><label for="notes">Notes</label><textarea id="notes" rows="3"
+                                placeholder="Additional details..."></textarea></div>
+                        <button type="submit" id="submit-task-btn" class="btn-primary">Add Assignment</button>
+                        <button type="button" id="cancel-edit-btn" class="btn-sm danger" style="display:none; margin-top:0.5rem; width:100%;" onclick="cancelEdit()">Cancel Edit</button>
+                    </form>
+                </div>
+                <div style="margin-bottom: 1rem; display: flex; gap: 1rem;"><button id="sort-date" class="btn-sm">Sort
+                        by Date</button><button id="sort-priority" class="btn-sm">Sort by Priority</button>
+                </div>
+                <div id="pending-tasks-container" class="tasks-container"></div>
+            </section>
+            <section id="grades" class="view">
+                <header>
+                    <h1>Grade Calculator</h1><button id="save-grades" class="btn-primary" style="width: auto; margin-top: 10px;">Save All
+                        Grades</button>
+                </header>
+                <div id="grades-grid" class="grades-grid"></div>
+            </section>
+            <section id="calendar" class="view">
+                <div style="text-align: center; margin-bottom: 1rem;">
+                    <h2 id="calendar-month-year" style="color: var(--text-main); font-size: 1.5rem;"></h2>
+                </div>
+                <header style="margin-bottom: 1rem;">
+                    <h1>Calendar</h1>
+                </header>
+                <div id="calendar-filters" class="calendar-filters"></div>
+                <div id="calendar-grid" class="calendar-grid"></div>
+            </section>
+            <section id="timer" class="view">
+                <header>
+                    <h1>Study Timer</h1>
+                </header>
+                <div class="timer-container glass">
+                    <div class="timer-header">
+                        <div id="timer-phase" class="timer-phase">Work Session</div>
+                        <div id="session-count" class="session-count">Sessions: 0/4</div>
+                    </div>
+                    <div id="timer-display" class="timer-display">25:00</div>
+                    <div class="timer-controls"><button id="timer-start" class="btn-primary">Start</button><button
+                            id="timer-pause" class="btn-primary"
+                            style="display: none; background: var(--priority-high);">Pause</button><button
+                            id="timer-reset" class="btn-sm">Reset</button></div>
+                    <div class="timer-settings">
+                        <h3>Settings (Minutes)</h3>
+                        <div class="form-row">
+                            <div class="form-group"><label>Work</label><input type="number" id="work-duration"
+                                    value="25"></div>
+                            <div class="form-group"><label>Short Break</label><input type="number"
+                                    id="short-break-duration" value="5"></div>
+                            <div class="form-group"><label>Long Break</label><input type="number"
+                                    id="long-break-duration" value="15"></div>
+                        </div>
+                        <button id="save-timer-settings" class="btn-sm">Save Settings</button>
+                    </div>
+                </div>
+            </section>
+            <section id="completed" class="view">
+                <header style="flex-direction: column; align-items: flex-start; gap: 1rem;">
+                    <h1>History</h1>
+                    <button id="clear-completed" class="btn-sm danger">Clear All</button>
+                </header>
+                <div id="history-filter-msg" style="display:none; color:var(--accent-color); margin-bottom:1rem;">Showing tasks completed this week</div>
+                <div id="completed-tasks-container" class="tasks-container"></div>
+            </section>
+        </main>
+    </div>
+    
+    <!-- Floating Action Button Menu - REORDERED HTML for Stack Up Effect -->
+    <div class="fab-container" id="fab-menu">
+        <button class="fab-main" id="fab-trigger">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+        </button>
+        <button class="fab-menu-item" id="fab-upload-cal" title="Upload Calendar" data-tooltip="Upload .ics File">📅</button>
+        <button class="fab-menu-item" id="fab-link-cal" title="Link Calendar" data-tooltip="Link Calendar URL">🔗</button>
+        <button class="fab-menu-item" id="fab-settings" title="Settings" data-tooltip="Settings">⚙️</button>
+        <button class="fab-menu-item" id="fab-tutor" title="Gemini Tutor" data-tooltip="Gemini Tutor">✨</button>
+    </div>
+
+    <div class="version-tag">v2.2</div>
+    
+    <!-- Modals -->
+    <div id="import-modal" class="modal">
+        <div class="modal-content glass">
+            <h2>Import Assignments</h2>
+            <div id="drop-zone" class="drop-zone" style="margin-bottom: 1rem;">
+                <p>Drag & Drop .ics file here</p><small>or click to upload</small><input type="file" id="ics-input"
+                    accept=".ics" style="display:none;">
+            </div>
+            <div style="margin-bottom: 1.5rem;">
+                <label for="import-target-class" style="display: block; margin-bottom: 0.5rem;">Assign to Class:</label>
+                <select id="import-target-class" class="glass-input" style="width:100%;"></select>
+            </div>
+            <p>Select the events you want to import:</p>
+            <!-- Add Select All Control -->
+            <div style="margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem; background: rgba(255,255,255,0.05); border-radius: 8px;">
+                <input type="checkbox" id="select-all-import" checked>
+                <label for="select-all-import" style="cursor: pointer; font-weight: bold;">Select All / Deselect All</label>
+            </div>
+            <div id="import-list" class="import-list" style="max-height: 300px; overflow-y: auto; margin-bottom: 1rem;"></div>
+            <div class="modal-actions">
+                <button id="cancel-import" class="btn-secondary">Close</button>
+                <button id="confirm-import" class="btn-primary">Import Selected</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="ai-modal" class="modal">
+        <div class="modal-content glass" style="height: 80vh; max-width: 800px;">
+            <h2 id="ai-modal-title">✨ AI Tutor</h2>
+            <div id="ai-chat-container" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; margin-bottom: 1rem; padding: 1rem; background: rgba(0,0,0,0.2); border-radius: 12px;">
+                <div class="ai-msg">Hello! I'm your Gemini Tutor. How can I help you study today?</div>
+            </div>
+            
+            <!-- File Attachment Area -->
+            <div id="ai-file-preview" style="display: none; padding: 0.5rem; background: rgba(255,255,255,0.1); border-radius: 8px; margin-bottom: 0.5rem; align-items: center; justify-content: space-between;">
+                <span id="ai-filename" style="font-size: 0.9rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 200px;">filename.txt</span>
+                <button id="remove-file-btn" style="background: none; border: none; color: #ef4444; cursor: pointer; font-size: 1.2rem;">&times;</button>
+            </div>
+
+            <div style="display: flex; gap: 0.5rem; align-items: center;">
+                <button id="ai-attach-btn" class="btn-icon" title="Attach File" style="color: var(--accent-color); padding: 0.5rem;">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg>
+                </button>
+                <input type="file" id="ai-file-input" style="display: none;" accept=".pdf,.txt,.md,.js,.py,.html,.css,.csv,.xml,.rtf,.png,.jpg,.jpeg,.webp">
+                
+                <input type="text" id="ai-input" placeholder="Ask a question..." style="flex: 1;">
+                <button id="ai-send" class="btn-primary" style="width: auto;">Send</button>
+            </div>
+            <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 0.5rem;">Supported: PDF, Images, Text (TXT, MD, Code)</div>
+            <button onclick="document.getElementById('ai-modal').classList.remove('active')" class="btn-secondary" style="margin-top: 1rem; width: 100%;">Close</button>
+        </div>
+    </div>
+    
+    <!-- New Name Modal -->
+    <div id="name-modal" class="modal" style="z-index: 200;"> <!-- Higher z-index to be on top -->
+        <div class="modal-content glass" style="max-width: 400px; text-align: center;">
+            <h2>Welcome!</h2>
+            <p style="margin-bottom: 1.5rem; color: var(--text-muted);">What should we call you?</p>
+            <input type="text" id="user-name-input" placeholder="Your First Name" style="margin-bottom: 1.5rem; text-align: center;">
+            <button id="save-name-btn" class="btn-primary">Get Started</button>
+        </div>
+    </div>
+
+    <div id="settings-modal" class="modal">
+        <div class="modal-content glass">
+            <h2>⚙️ Settings</h2>
+            
+            <h3 style="margin-top: 1.5rem; margin-bottom: 1rem;">🤖 Google Gemini API Key</h3>
+            <div class="form-group">
+                <input type="password" id="settings-api-key" placeholder="Enter your API Key">
+                <small style="color: var(--text-muted); display: block; margin-top: 0.5rem;">Key is stored locally in your browser.</small>
+                <a href="https://docs.google.com/document/d/1l2jWOPWzPbJuQWTGML5oOtR3OzaK19Gz2Bzkpm0F-O4/edit?usp=sharing" target="_blank" style="color: var(--highlight); text-decoration: none; font-size: 0.9rem; display: block; margin-top: 0.5rem;">Click here to learn how to get a Free API key for Gemini Tutor</a>
+            </div>
+            
+            <h3 style="margin-top: 1.5rem; margin-bottom: 1rem;">📚 Class Names</h3>
+            <div id="settings-classes-list">
+                <!-- Classes injected here -->
+            </div>
+            
+            <h3 style="margin-top: 1.5rem; margin-bottom: 1rem;">👁️ Calendar Visibility</h3>
+            <div id="settings-calendars-list">
+                <!-- Calendar Toggles injected here -->
+            </div>
+
+            <h3 style="margin-top: 1.5rem; margin-bottom: 1rem;">💾 Data Management</h3>
+            <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                <button id="export-data" class="btn-sm" style="flex: 1; background: rgba(59, 130, 246, 0.2); border-color: rgba(59, 130, 246, 0.5);">
+                    📤 Export Data Backup
+                </button>
+                <button id="import-data-btn" class="btn-sm" style="flex: 1; background: rgba(16, 185, 129, 0.2); border-color: rgba(16, 185, 129, 0.5);">
+                    📥 Restore Data Backup
+                </button>
+                <input type="file" id="import-file-input" accept=".json" style="display: none;">
+            </div>
+            <p style="color: var(--text-muted); margin-top: 1rem; margin-bottom: 0.5rem;">Use these options if you are:</p>
+            <ul style="color: var(--text-muted); margin-bottom: 1rem; padding-left: 1.5rem; line-height: 1.6;">
+                <li>Trying to transfer data between devices</li>
+                <li>Clearing your cache</li>
+                <li>Resetting your PC</li>
+                <li>Updating this Command Center webpage</li>
+                <li>Noticing your data isn't being saved</li>
+            </ul>
+            <p style="color: var(--text-muted); font-style: italic;">We also recommend doing this each time you make a big change, to prevent data loss.</p>
+
+            <div class="modal-actions" style="margin-top: 2rem;">
+                <button id="close-settings" class="btn-secondary">Close</button>
+                <button id="save-settings" class="btn-primary">Save Settings</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="url-import-modal" class="modal">
+        <div class="modal-content glass">
+            <h2>🔗 Link Calendar</h2>
+            <a href="https://docs.google.com/document/d/120uN03jhndBI_jkclTFG4TkBpdIXSM-55Hs2UBodVQ0/edit?usp=sharing" target="_blank" style="color: var(--highlight); text-decoration: none; display: block; margin-bottom: 1rem;">How to Find Your Private Google Calendar Link</a>
+            <input type="text" id="cal-url-input" placeholder="https://example.com/calendar.ics">
+            <div class="modal-actions" style="margin-top: 1.5rem;">
+                <button onclick="document.getElementById('url-import-modal').classList.remove('active')" class="btn-secondary">Close</button>
+                <button id="confirm-url-import" class="btn-primary">Import</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let assignments = [];
+        let grades = [];
+        let timerState = { timeLeft: 25 * 60, isRunning: false, mode: 'work', sessionCount: 0, settings: { work: 25, shortBreak: 5, longBreak: 15 } };
+        let timerInterval = null;
+        let audioCtx = null;
+        let currentAiTask = null; // If null, in general chat mode
+        let currentFilter = 'all'; // 'all', 'today', 'week', 'urgent', 'next10', 'date:YYYY-MM-DD'
+        let calendarVisibility = {}; // Map className -> boolean
+        let aiAttachment = null; // Stores current file {mimeType, data}
+
+        // DOM Elements
+        const form = document.getElementById('add-task-form');
+        const pendingContainer = document.getElementById('pending-tasks-container');
+        const completedContainer = document.getElementById('completed-tasks-container');
+        const urgentList = document.getElementById('urgent-tasks-list');
+        const nextEventsList = document.getElementById('next-events-list');
+        const weeklyProgress = document.getElementById('weekly-progress');
+        const progressText = document.getElementById('progress-text');
+        const calendarGrid = document.getElementById('calendar-grid');
+        const calendarFilters = document.getElementById('calendar-filters');
+        const tabs = document.querySelectorAll('.sidebar nav li');
+        const views = document.querySelectorAll('.view');
+        const datetimeDisplay = document.getElementById('datetime-display');
+        const classSelect = document.getElementById('class-select');
+        const categorySelect = document.getElementById('category-select');
+        const addTaskCard = document.getElementById('add-task-card');
+        const addTaskHeader = document.getElementById('add-task-header');
+        const submitTaskBtn = document.getElementById('submit-task-btn');
+        const cancelEditBtn = document.getElementById('cancel-edit-btn');
+        const filterStatusContainer = document.getElementById('filter-status-container');
+        const filterStatusText = document.getElementById('filter-status-text');
+
+        document.addEventListener('DOMContentLoaded', () => {
+            checkUserName(); // Check and set user name via modal
+            loadFromLocal();
+            loadTimerSettings();
+            loadGrades();
+            renderAll();
+            setupTabs();
+            setupSorting();
+            setupTimer();
+            setupImporter();
+            setupMusicPlayer();
+            setupGrades();
+            setupFab();
+            setupSettings();
+            setupAiChat();
+            setupBackupRestore();
+            startClock();
+
+            classSelect.addEventListener('change', updateCategorySelect);
+            populateClassSelect();
+            
+            // Expose deleteAssignment globally for onclick handlers
+            window.deleteAssignment = deleteAssignment;
+            window.addCategory = addCategory; 
+            window.removeCategory = removeCategory;
+            window.resetTimer = resetTimer;
+
+            // Ensure save on close
+            window.addEventListener('beforeunload', () => {
+                saveToLocal();
+                saveGrades();
+                saveTimerSettings();
+            });
+        });
+
+        function checkUserName() {
+            const name = localStorage.getItem('userName');
+            if (name) {
+                updateGreeting(name);
+            } else {
+                document.getElementById('name-modal').classList.add('active');
+            }
+            // Refresh greeting every hour
+            setInterval(() => {
+                 const n = localStorage.getItem('userName');
+                 if(n) updateGreeting(n);
+            }, 3600000);
+        }
+        
+        // Add event listener for the save name button
+        document.getElementById('save-name-btn').addEventListener('click', () => {
+             const input = document.getElementById('user-name-input');
+             const name = input.value.trim() || 'Student';
+             localStorage.setItem('userName', name);
+             updateGreeting(name);
+             document.getElementById('name-modal').classList.remove('active');
+        });
+
+        function updateGreeting(name) {
+            if(!name) name = localStorage.getItem('userName') || 'Student';
+            const hour = new Date().getHours();
+            let greeting = 'Good morning';
+            if (hour >= 12 && hour < 17) greeting = 'Good afternoon';
+            else if (hour >= 17 && hour < 22) greeting = 'Good evening';
+            else if (hour >= 22 || hour < 5) greeting = 'Good night';
+            
+            const el = document.getElementById('dashboard-greeting');
+            if(el) el.innerText = `${greeting}, ${name}`;
+        }
+
+        function startClock() {
+            function update() {
+                const now = new Date();
+                const dateStr = now.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+                const timeStr = now.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+                datetimeDisplay.innerHTML = `<span class="datetime-time">${timeStr}</span><span>${dateStr}</span>`;
+            }
+            update(); setInterval(update, 1000);
+        }
+
+        function saveToLocal() { 
+            localStorage.setItem('assignments', JSON.stringify(assignments)); 
+            localStorage.setItem('calendarVisibility', JSON.stringify(calendarVisibility));
+            renderAll(); 
+        }
+        function saveTimerSettings() { localStorage.setItem('timerSettings', JSON.stringify(timerState.settings)); localStorage.setItem('sessionCount', timerState.sessionCount); }
+        function loadFromLocal() { 
+            const stored = localStorage.getItem('assignments'); 
+            if (stored) assignments = JSON.parse(stored); 
+            const storedVis = localStorage.getItem('calendarVisibility');
+            if (storedVis) calendarVisibility = JSON.parse(storedVis);
+        }
+        function loadTimerSettings() { const storedSettings = localStorage.getItem('timerSettings'); if (storedSettings) timerState.settings = JSON.parse(storedSettings); const storedSessions = localStorage.getItem('sessionCount'); if (storedSessions) timerState.sessionCount = parseInt(storedSessions); }
+
+        // Backup & Restore Logic
+        function setupBackupRestore() {
+            // Export
+            document.getElementById('export-data').addEventListener('click', () => {
+                const data = {
+                    assignments,
+                    grades,
+                    timerSettings: timerState.settings,
+                    sessionCount: timerState.sessionCount,
+                    apiKey: localStorage.getItem('gemini_api_key'),
+                    calendarVisibility,
+                    userName: localStorage.getItem('userName'),
+                    exportedAt: new Date().toISOString()
+                };
+                
+                const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `study-command-center-backup-${new Date().toISOString().slice(0,10)}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            });
+
+            // Import
+            const fileInput = document.getElementById('import-file-input');
+            document.getElementById('import-data-btn').addEventListener('click', () => fileInput.click());
+            
+            fileInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const data = JSON.parse(e.target.result);
+                        if (data.assignments) assignments = data.assignments;
+                        if (data.grades) grades = data.grades;
+                        if (data.timerSettings) timerState.settings = data.timerSettings;
+                        if (data.sessionCount) timerState.sessionCount = data.sessionCount;
+                        if (data.apiKey) localStorage.setItem('gemini_api_key', data.apiKey);
+                        if (data.calendarVisibility) calendarVisibility = data.calendarVisibility;
+                        if (data.userName) localStorage.setItem('userName', data.userName);
+                        
+                        // Save everything
+                        saveToLocal();
+                        saveGrades();
+                        saveTimerSettings();
+                        renderGrades();
+                        populateClassSelect();
+                        checkUserName();
+                        
+                        alert('Data restored successfully! The page will now refresh.');
+                        location.reload();
+                    } catch (err) {
+                        alert('Error importing data. Invalid file format.');
+                        console.error(err);
+                    }
+                };
+                reader.readAsText(file);
+            });
+        }
+
+        // FAB Logic
+        function setupFab() {
+            const trigger = document.getElementById('fab-trigger');
+            const container = document.getElementById('fab-menu');
+            
+            trigger.addEventListener('click', () => {
+                container.classList.toggle('open');
+                trigger.classList.toggle('active');
+            });
+
+            // Close menu when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!container.contains(e.target)) {
+                    container.classList.remove('open');
+                    trigger.classList.remove('active');
+                }
+            });
+
+            document.getElementById('fab-upload-cal').addEventListener('click', () => {
+                document.getElementById('import-modal').classList.add('active');
+                populateImportClassSelect(); // Populate the select in import modal
+            });
+            
+            document.getElementById('fab-link-cal').addEventListener('click', () => {
+                document.getElementById('url-import-modal').classList.add('active');
+            });
+
+            document.getElementById('fab-settings').addEventListener('click', openSettings);
+            
+            document.getElementById('fab-tutor').addEventListener('click', () => {
+                currentAiTask = null;
+                document.getElementById('ai-modal-title').innerText = "✨ Gemini Tutor (General Help)";
+                document.getElementById('ai-chat-container').innerHTML = '<div class="ai-msg">Hello! I\'m your Gemini Tutor. How can I help you study today?</div>';
+                document.getElementById('ai-modal').classList.add('active');
+            });
+
+            document.getElementById('confirm-url-import').addEventListener('click', importFromUrl);
+        }
+
+        function openSettings() {
+            const modal = document.getElementById('settings-modal');
+            const keyInput = document.getElementById('settings-api-key');
+            
+            keyInput.value = localStorage.getItem('gemini_api_key') || '';
+            
+            renderSettingsClassesList();
+            renderSettingsCalendarList();
+            
+            modal.classList.add('active');
+        }
+
+        function renderSettingsClassesList() {
+            const container = document.getElementById('settings-classes-list');
+            container.innerHTML = '';
+            grades.forEach((g, i) => {
+                const row = document.createElement('div');
+                row.style.marginBottom = '0.5rem';
+                row.innerHTML = `<input type="text" value="${g.name}" data-index="${i}" class="class-name-edit">`;
+                container.appendChild(row);
+            });
+            
+            // Add Class Button
+            const addBtn = document.createElement('button');
+            addBtn.className = 'btn-sm';
+            addBtn.innerText = '+ Add Class';
+            addBtn.style.marginTop = '0.5rem';
+            addBtn.onclick = () => {
+                grades.push({
+                    name: `Class ${grades.length + 1}`,
+                    categories: [
+                        { name: 'Homework', weight: 20, score: 100 },
+                        { name: 'Tests', weight: 30, score: 100 },
+                        { name: 'Quizzes', weight: 10, score: 100 },
+                        { name: 'Projects', weight: 20, score: 100 },
+                        { name: 'Final', weight: 20, score: 100 }
+                    ]
+                });
+                renderSettingsClassesList(); // Re-render inputs immediately
+            };
+            container.appendChild(addBtn);
+        }
+        
+        function renderSettingsCalendarList() {
+            const container = document.getElementById('settings-calendars-list');
+            container.innerHTML = '';
+            
+            // Get all unique sources
+            const sources = new Set(grades.map(g => g.name));
+            assignments.forEach(a => sources.add(a.className));
+            
+            sources.forEach(source => {
+                const row = document.createElement('div');
+                row.style.display = 'flex';
+                row.style.justifyContent = 'space-between';
+                row.style.alignItems = 'center';
+                row.style.marginBottom = '0.5rem';
+                row.style.padding = '0.5rem';
+                row.style.background = 'rgba(255,255,255,0.05)';
+                row.style.borderRadius = '8px';
+                
+                const label = document.createElement('span');
+                label.innerText = source;
+                
+                const toggle = document.createElement('input');
+                toggle.type = 'checkbox';
+                toggle.checked = calendarVisibility[source] !== false; // Default true
+                toggle.onchange = (e) => {
+                    calendarVisibility[source] = e.target.checked;
+                };
+                
+                row.appendChild(label);
+                row.appendChild(toggle);
+                container.appendChild(row);
+            });
+        }
+
+        function setupSettings() {
+            document.getElementById('close-settings').addEventListener('click', () => {
+                document.getElementById('settings-modal').classList.remove('active');
+            });
+            
+            document.getElementById('save-settings').addEventListener('click', () => {
+                const key = document.getElementById('settings-api-key').value;
+                if (key) localStorage.setItem('gemini_api_key', key);
+                
+                const inputs = document.querySelectorAll('.class-name-edit');
+                inputs.forEach(input => {
+                    const idx = input.dataset.index;
+                    if(grades[idx]) grades[idx].name = input.value;
+                });
+                
+                localStorage.setItem('grades', JSON.stringify(grades));
+                localStorage.setItem('calendarVisibility', JSON.stringify(calendarVisibility)); // Save visibility settings
+                
+                renderGrades();
+                populateClassSelect();
+                renderCalendar(); // Refresh calendar
+                renderAll(); // Refresh lists just in case
+                
+                document.getElementById('settings-modal').classList.remove('active');
+                alert('Settings saved!');
+            });
+        }
+
+        // Grade Logic
+        function loadGrades() {
+            const stored = localStorage.getItem('grades');
+            if (stored) {
+                grades = JSON.parse(stored);
+                // Migration: Ensure new categories exist in existing data
+                grades.forEach(course => {
+                    const hasQuiz = course.categories.some(c => c.name === 'Quizzes');
+                    const hasProject = course.categories.some(c => c.name === 'Projects');
+                    if (!hasQuiz) course.categories.push({ name: 'Quizzes', weight: 0, score: 100 });
+                    if (!hasProject) course.categories.push({ name: 'Projects', weight: 0, score: 100 });
+                });
+            } else {
+                for (let i = 0; i < 5; i++) {
+                    grades.push({
+                        name: `Class ${i + 1}`,
+                        categories: [
+                            { name: 'Homework', weight: 20, score: 100 },
+                            { name: 'Tests', weight: 30, score: 100 },
+                            { name: 'Quizzes', weight: 10, score: 100 },
+                            { name: 'Projects', weight: 20, score: 100 },
+                            { name: 'Final', weight: 20, score: 100 }
+                        ]
+                    });
+                }
+            }
+        }
+
+        function setupGrades() {
+            const saveBtn = document.getElementById('save-grades');
+            saveBtn.addEventListener('click', () => {
+                 saveGrades();
+                 alert('Grades saved!');
+            });
+            renderGrades();
+        }
+        
+        function scrapeGradesFromDOM() {
+            const cards = document.querySelectorAll('.grade-card');
+            if (cards.length === 0) return; 
+            
+            cards.forEach((card, index) => {
+                if (grades[index]) {
+                    const nameInput = card.querySelector('.class-name-input');
+                    if(nameInput) grades[index].name = nameInput.value;
+                    
+                    const rows = card.querySelectorAll('.category-row');
+                    const newCategories = [];
+                    rows.forEach(row => {
+                        const name = row.querySelector('.cat-name').value;
+                        const weight = parseFloat(row.querySelector('.cat-weight').value) || 0;
+                        const score = parseFloat(row.querySelector('.cat-score').value) || 0;
+                        newCategories.push({ name, weight, score });
+                    });
+                    grades[index].categories = newCategories;
+                }
+            });
+        }
+
+        function saveGrades() {
+            scrapeGradesFromDOM();
+            localStorage.setItem('grades', JSON.stringify(grades));
+            renderGrades();
+            populateClassSelect();
+        }
+
+        function renderGrades() {
+            const grid = document.getElementById('grades-grid');
+            grid.innerHTML = '';
+            grades.forEach((course, index) => {
+                const card = document.createElement('div');
+                card.className = 'grade-card glass';
+                let totalWeight = 0;
+                let weightedScore = 0;
+                course.categories.forEach(cat => {
+                    totalWeight += cat.weight;
+                    weightedScore += (cat.score * cat.weight);
+                });
+                const finalGrade = totalWeight > 0 ? (weightedScore / totalWeight).toFixed(2) : 0;
+
+                let categoriesHtml = '';
+                course.categories.forEach((cat, catIndex) => {
+                    categoriesHtml += `
+                        <div class="category-row">
+                            <input type="text" class="cat-name" value="${cat.name}" placeholder="Category">
+                            <input type="number" class="cat-weight" value="${cat.weight}" placeholder="Weight %">
+                            <input type="number" class="cat-score" value="${cat.score}" placeholder="Score %">
+                            <button class="btn-icon btn-delete" onclick="removeCategory(${index}, ${catIndex})" style="width:30px;height:30px;">×</button>
+                        </div>
+                    `;
+                });
+
+                card.innerHTML = `
+                    <div class="grade-header">
+                        <input type="text" class="class-name-input" value="${course.name}" style="background:transparent; border:none; font-weight:bold; font-size:1.1rem; color:white; width:60%;">
+                        <div class="grade-score">${finalGrade}%</div>
+                    </div>
+                    <div class="categories-list">${categoriesHtml}</div>
+                    <button class="btn-sm" onclick="addCategory(${index})" style="margin-top:1rem; width:100%;">+ Add Category</button>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function addCategory(index) { 
+            scrapeGradesFromDOM(); 
+            grades[index].categories.push({ name: 'New Category', weight: 0, score: 100 }); 
+            localStorage.setItem('grades', JSON.stringify(grades));
+            renderGrades(); 
+        }
+        
+        function removeCategory(classIndex, catIndex) { 
+            scrapeGradesFromDOM(); 
+            if (grades[classIndex] && grades[classIndex].categories) {
+                grades[classIndex].categories.splice(catIndex, 1);
+            }
+            localStorage.setItem('grades', JSON.stringify(grades));
+            renderGrades(); 
+        }
+
+        function populateClassSelect() {
+            classSelect.innerHTML = '';
+            grades.forEach((g, index) => {
+                const option = document.createElement('option');
+                option.value = index;
+                option.text = g.name;
+                classSelect.appendChild(option);
+            });
+            updateCategorySelect();
+        }
+
+        function updateCategorySelect() {
+            const classIndex = classSelect.value;
+            categorySelect.innerHTML = '<option value="">None</option>';
+            if (grades[classIndex]) {
+                grades[classIndex].categories.forEach(cat => {
+                    const option = document.createElement('option');
+                    option.value = cat.name;
+                    option.text = cat.name;
+                    categorySelect.appendChild(option);
+                });
+            }
+        }
+
+        function populateImportClassSelect() {
+            const select = document.getElementById('import-target-class');
+            select.innerHTML = '';
+            grades.forEach((g, index) => {
+                const option = document.createElement('option');
+                option.value = index;
+                option.text = g.name;
+                select.appendChild(option);
+            });
+        }
+
+        function toggleAllDay() {
+            const isAllDay = document.getElementById('all-day-toggle').checked;
+            const dateInput = document.getElementById('due-date');
+            const currentValue = dateInput.value;
+            
+            if (isAllDay) {
+                dateInput.type = 'date';
+                if(currentValue && currentValue.includes('T')) {
+                    dateInput.value = currentValue.split('T')[0];
+                }
+            } else {
+                dateInput.type = 'datetime-local';
+                if(currentValue && !currentValue.includes('T')) {
+                    dateInput.value = currentValue + 'T23:59'; // Default to end of day if converting back
+                }
+            }
+        }
+
+        function addAssignment(e) {
+            e.preventDefault();
+            const idInput = document.getElementById('task-id');
+            const isEdit = idInput.value !== '';
+            const className = classSelect.options[classSelect.selectedIndex] ? classSelect.options[classSelect.selectedIndex].text : 'Unknown';
+            const isAllDay = document.getElementById('all-day-toggle').checked;
+
+            if (isEdit) {
+                const id = parseFloat(idInput.value);
+                const index = assignments.findIndex(a => a.id === id);
+                if (index !== -1) {
+                    assignments[index].className = className;
+                    assignments[index].classId = classSelect.value;
+                    assignments[index].category = categorySelect.value;
+                    assignments[index].title = document.getElementById('task-title').value;
+                    assignments[index].dueDate = document.getElementById('due-date').value;
+                    assignments[index].priority = document.getElementById('priority').value;
+                    assignments[index].notes = document.getElementById('notes').value;
+                    assignments[index].allDay = isAllDay;
+                }
+                idInput.value = '';
+                submitTaskBtn.innerText = 'Add Assignment';
+                cancelEditBtn.style.display = 'none';
+                addTaskCard.classList.remove('edit-mode');
+                addTaskHeader.innerText = 'Add New Assignment';
+            } else {
+                const newAssignment = {
+                    id: Date.now(), 
+                    className: className,
+                    classId: classSelect.value,
+                    category: categorySelect.value,
+                    title: document.getElementById('task-title').value,
+                    dueDate: document.getElementById('due-date').value,
+                    priority: document.getElementById('priority').value,
+                    notes: document.getElementById('notes').value,
+                    completed: false,
+                    allDay: isAllDay,
+                    createdAt: new Date().toISOString()
+                };
+                assignments.push(newAssignment);
+            }
+            
+            // Reset filters when adding new stuff
+            currentFilter = 'all';
+            document.getElementById('all-day-toggle').checked = false;
+            toggleAllDay();
+            
+            saveToLocal(); form.reset(); populateClassSelect(); switchTab('pending');
+        }
+
+        function editAssignment(id) {
+            const task = assignments.find(a => a.id === id);
+            if (task) {
+                document.getElementById('task-id').value = task.id;
+                document.getElementById('task-title').value = task.title;
+                document.getElementById('priority').value = task.priority;
+                document.getElementById('notes').value = task.notes;
+                
+                const allDayToggle = document.getElementById('all-day-toggle');
+                allDayToggle.checked = !!task.allDay;
+                toggleAllDay();
+                
+                document.getElementById('due-date').value = task.dueDate;
+
+                if (task.classId !== undefined) {
+                    classSelect.value = task.classId;
+                    updateCategorySelect();
+                    categorySelect.value = task.category || '';
+                }
+                
+                // UI Updates for Edit Mode
+                submitTaskBtn.innerText = 'Save Changes';
+                cancelEditBtn.style.display = 'inline-block';
+                addTaskCard.classList.add('edit-mode');
+                addTaskHeader.innerText = 'Edit Assignment';
+                
+                // Ensure we see the form (in case filtered)
+                clearFilters(); 
+                switchTab('pending'); 
+                document.getElementById('task-title').focus();
+            }
+        }
+        
+        function cancelEdit() {
+            form.reset();
+            document.getElementById('task-id').value = '';
+            submitTaskBtn.innerText = 'Add Assignment';
+            cancelEditBtn.style.display = 'none';
+            addTaskCard.classList.remove('edit-mode');
+            addTaskHeader.innerText = 'Add New Assignment';
+        }
+
+        function deleteAssignment(id) { 
+            const numId = Number(id);
+            if (confirm('Are you sure you want to delete this assignment?')) { 
+                assignments = assignments.filter(a => a.id !== numId); 
+                // If deleting while editing, cancel edit mode
+                if(document.getElementById('task-id').value == numId) cancelEdit();
+                saveToLocal(); 
+            } 
+        }
+        
+        function toggleComplete(id) { const task = assignments.find(a => a.id === id); if (task) { task.completed = !task.completed; if (task.completed) triggerConfetti(); saveToLocal(); } }
+        function triggerConfetti() { confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 }, colors: ['#e94560', '#0f3460', '#ffffff'] }); }
+
+        // Filter Logic
+        function filterView(type, param) {
+            currentFilter = type;
+            switchTab('pending');
+            renderPending(param);
+        }
+        
+        function goToHistory(filter) {
+            switchTab('completed');
+            renderCompleted(filter);
+        }
+        
+        function clearFilters() {
+            currentFilter = 'all';
+            renderPending();
+        }
+
+        function renderAll() { renderPending(); renderCompleted(); renderDashboardStats(); renderCalendar(); }
+        
+        function renderPending(filterParam) {
+            pendingContainer.innerHTML = '';
+            let pending = assignments.filter(a => !a.completed);
+            
+            // Apply Filters
+            const now = new Date();
+            const todayStart = new Date(now); todayStart.setHours(0,0,0,0);
+            const todayEnd = new Date(now); todayEnd.setHours(23,59,59,999);
+            
+            const startOfWeek = new Date(now); startOfWeek.setDate(now.getDate() - now.getDay()); startOfWeek.setHours(0,0,0,0);
+            const endOfWeek = new Date(startOfWeek); endOfWeek.setDate(startOfWeek.getDate() + 6); endOfWeek.setHours(23,59,59,999);
+
+            // HIDE/SHOW Add Form based on filter
+            if (currentFilter !== 'all') {
+                addTaskCard.style.display = 'none';
+                filterStatusContainer.style.display = 'flex';
+            } else {
+                addTaskCard.style.display = 'block';
+                filterStatusContainer.style.display = 'none';
+            }
+
+            if (currentFilter === 'today') {
+                pending = pending.filter(a => {
+                    const d = new Date(a.dueDate);
+                    if (a.allDay) d.setHours(0,0,0,0);
+                    return d >= todayStart && d <= todayEnd;
+                });
+                filterStatusText.innerText = 'Showing: Due Today';
+            } else if (currentFilter === 'week') {
+                pending = pending.filter(a => {
+                    const d = new Date(a.dueDate);
+                    if (a.allDay) d.setHours(0,0,0,0);
+                    return d >= startOfWeek && d <= endOfWeek;
+                });
+                filterStatusText.innerText = 'Showing: Due This Week';
+            } else if (currentFilter === 'urgent') {
+                pending = pending.filter(a => a.priority === 'High' || a.priority === 'Critical');
+                filterStatusText.innerText = 'Showing: Urgent Tasks';
+            } else if (currentFilter === 'next10') {
+                pending.sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
+                pending = pending.filter(a => new Date(a.dueDate) >= now).slice(0, 10);
+                filterStatusText.innerText = 'Showing: Next 10 Events';
+            } else if (currentFilter === 'date' && filterParam) {
+                const targetDate = new Date(filterParam);
+                const targetStart = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate());
+                const targetEnd = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate(), 23, 59, 59);
+                
+                pending = pending.filter(a => {
+                    const d = new Date(a.dueDate);
+                    if(a.allDay) {
+                        // Simple string comparison for all-day to match calendar logic
+                        const parts = a.dueDate.split('-');
+                        const tParts = filterParam.split('-'); // Assuming YYYY-MM-DD
+                        return parts[0] == tParts[0] && parts[1] == tParts[1] && parts[2] == tParts[2];
+                    }
+                    return d >= targetStart && d <= targetEnd;
+                });
+                filterStatusText.innerText = `Showing: Due on ${targetDate.toLocaleDateString()}`;
+            }
+
+            // Sort
+            pending.sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
+            
+            if (pending.length === 0) {
+                pendingContainer.innerHTML = '<p style="text-align:center; color:var(--text-muted); padding: 2rem;">No tasks found for this view.</p>';
+            }
+
+            pending.forEach(task => {
+                const el = createTaskElement(task);
+                el.ondblclick = () => editAssignment(task.id);
+                pendingContainer.appendChild(el);
+            });
+            
+            // Stats lists (Always show unfiltered top urgency)
+            const allPending = assignments.filter(a => !a.completed).sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
+            
+            urgentList.innerHTML = '';
+            allPending.filter(t => t.priority === 'Critical' || t.priority === 'High').slice(0, 3).forEach(task => {
+                const li = document.createElement('li'); li.style.marginBottom = '0.5rem';
+                li.innerHTML = `<div style="display:flex; justify-content:space-between; align-items:center;"><span><strong>${task.className}</strong>: ${task.title}</span><span class="priority-badge p-${task.priority}">${task.priority}</span></div><small style="color:var(--text-muted)">Due: ${new Date(task.dueDate).toLocaleString()}</small>`;
+                urgentList.appendChild(li);
+            });
+            nextEventsList.innerHTML = '';
+            allPending.slice(0, 3).forEach(task => {
+                const li = document.createElement('li'); li.style.marginBottom = '0.5rem';
+                li.innerHTML = `<div style="display:flex; justify-content:space-between; align-items:center;"><span><strong>${task.className}</strong>: ${task.title}</span></div><small style="color:var(--text-muted)">Due: ${new Date(task.dueDate).toLocaleString()}</small>`;
+                nextEventsList.appendChild(li);
+            });
+        }
+
+        function renderCompleted(filter = null) {
+            completedContainer.innerHTML = '';
+            let completed = assignments.filter(a => a.completed);
+            
+            const msg = document.getElementById('history-filter-msg');
+            if(filter === 'week') {
+                 const now = new Date();
+                 const startOfWeek = new Date(now); startOfWeek.setDate(now.getDate() - now.getDay()); startOfWeek.setHours(0,0,0,0);
+                 const endOfWeek = new Date(startOfWeek); endOfWeek.setDate(startOfWeek.getDate() + 6); endOfWeek.setHours(23,59,59,999);
+                 completed = completed.filter(a => {
+                     // Filter based on DUE date or creation date if completed date isn't stored (using due date as proxy per user request)
+                     const d = new Date(a.dueDate); 
+                     return d >= startOfWeek && d <= endOfWeek;
+                 });
+                 msg.style.display = 'block';
+            } else {
+                msg.style.display = 'none';
+            }
+
+            completed.sort((a, b) => new Date(b.dueDate) - new Date(a.dueDate));
+            completed.forEach(task => completedContainer.appendChild(createTaskElement(task, true)));
+        }
+
+        function createTaskElement(task, isCompleted = false) {
+            const div = document.createElement('div'); div.className = `task-item glass ${isCritical(task) && !isCompleted ? 'glow-critical' : ''}`;
+            
+            let dateDisplay;
+            if (task.allDay) {
+                 const dateObj = new Date(task.dueDate);
+                 const userTimezoneOffset = dateObj.getTimezoneOffset() * 60000;
+                 const adjustedDate = new Date(dateObj.getTime() + userTimezoneOffset);
+                 dateDisplay = adjustedDate.toLocaleDateString();
+            } else {
+                 dateDisplay = new Date(task.dueDate).toLocaleString();
+            }
+
+            const catLabel = task.category ? `<span style="font-size:0.8rem; background:rgba(255,255,255,0.1); padding:2px 6px; border-radius:4px; margin-left:0.5rem;">${task.category}</span>` : '';
+            const aiBtn = !isCompleted ? `<button onclick="askAI(${task.id}); event.stopPropagation();" class="ai-btn" title="Generate Study Plan">✨</button>` : '';
+            
+            // Note on delete: prevent propagation to avoid triggering double click or edit
+            div.innerHTML = `<div class="task-info"><h4>${task.title} <span style="font-weight:400; color:var(--text-muted)">(${task.className})</span>${catLabel}</h4><div class="task-meta"><span>📅 ${dateDisplay}</span><span class="priority-badge p-${task.priority}">${task.priority}</span></div>${task.notes ? `<p style="margin-top:0.5rem; font-size:0.9rem; color:var(--text-muted)">${task.notes}</p>` : ''}</div><div class="task-actions" style="display:flex; align-items:center;">${aiBtn}<button onclick="toggleComplete(${task.id}); event.stopPropagation();" class="btn-icon btn-check" title="${isCompleted ? 'Mark Incomplete' : 'Complete'}">${isCompleted ? '↩️' : '✅'}</button><button onclick="editAssignment(${task.id}); event.stopPropagation();" class="btn-icon" title="Edit">✏️</button><button onclick="deleteAssignment(${task.id}); event.stopPropagation();" class="btn-icon btn-delete" title="Delete">🗑️</button></div>`;
+            return div;
+        }
+
+        function isCritical(task) {
+            if (task.priority === 'Critical') return true;
+            if (task.priority === 'High') { const due = new Date(task.dueDate); const now = new Date(); const diffHours = (due - now) / (1000 * 60 * 60); return diffHours < 24 && diffHours > 0; }
+            return false;
+        }
+
+        function renderDashboardStats() {
+            const now = new Date();
+            const startOfWeek = new Date(now); startOfWeek.setDate(now.getDate() - now.getDay()); startOfWeek.setHours(0, 0, 0, 0);
+            const endOfWeek = new Date(startOfWeek); endOfWeek.setDate(startOfWeek.getDate() + 6); endOfWeek.setHours(23, 59, 59, 999);
+            const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
+            const todayEnd = new Date(); todayEnd.setHours(23, 59, 59, 999);
+            const weeklyTasks = assignments.filter(a => { const d = new Date(a.dueDate); return d >= startOfWeek && d <= endOfWeek; });
+            const dueToday = assignments.filter(a => { const d = new Date(a.dueDate); return !a.completed && d >= todayStart && d <= todayEnd; }).length;
+            const dueWeek = weeklyTasks.filter(a => !a.completed).length;
+            document.getElementById('due-today-count').innerText = dueToday; document.getElementById('due-week-count').innerText = dueWeek;
+            const completedWeekly = weeklyTasks.filter(a => a.completed).length; const totalWeekly = weeklyTasks.length;
+            const percentage = totalWeekly === 0 ? 0 : Math.round((completedWeekly / totalWeekly) * 100);
+            weeklyProgress.style.width = `${percentage}%`; progressText.innerText = `${percentage}%`;
+        }
+
+        function toggleCalendar(className) {
+            if (calendarVisibility[className] === undefined) {
+                calendarVisibility[className] = false; // Default to hidden if toggled first time? No, usually default visible.
+                // Logic: if not in map, assume visible. If in map, use value.
+            }
+            calendarVisibility[className] = !calendarVisibility[className];
+            saveToLocal();
+            renderCalendar();
+        }
+
+        function renderCalendar() {
+            const date = new Date(); const month = date.getMonth(); const year = date.getFullYear();
+            const firstDay = new Date(year, month, 1); const lastDay = new Date(year, month + 1, 0);
+            
+            // Insert Month Year Title
+            const monthYearStr = date.toLocaleString('default', { month: 'long', year: 'numeric' });
+            document.getElementById('calendar-month-year').innerText = monthYearStr;
+
+            calendarGrid.innerHTML = '';
+            const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            days.forEach(d => { const div = document.createElement('div'); div.style.textAlign = 'center'; div.style.padding = '0.5rem'; div.style.fontWeight = 'bold'; div.innerText = d; calendarGrid.appendChild(div); });
+            for (let i = 0; i < firstDay.getDay(); i++) calendarGrid.appendChild(document.createElement('div'));
+            
+            // Render Filters
+            calendarFilters.innerHTML = '';
+            const allClasses = [...new Set(assignments.map(a => a.className))];
+            allClasses.forEach(c => {
+                const pill = document.createElement('div');
+                const isVisible = calendarVisibility[c] !== false; // Default true
+                pill.className = `cal-filter-pill ${isVisible ? 'active' : ''}`;
+                pill.innerText = c;
+                pill.onclick = () => {
+                    calendarVisibility[c] = !isVisible;
+                    saveToLocal();
+                    renderCalendar();
+                };
+                calendarFilters.appendChild(pill);
+            });
+
+            for (let i = 1; i <= lastDay.getDate(); i++) {
+                const dayDiv = document.createElement('div'); dayDiv.className = 'calendar-day'; dayDiv.innerHTML = `<span class="day-number">${i}</span>`;
+                
+                // Add Click Handler to Day Box
+                const dayDateString = `${year}-${String(month + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
+                dayDiv.onclick = () => {
+                    filterView('date', dayDateString);
+                };
+                
+                const dayStart = new Date(year, month, i);
+                const dayEnd = new Date(year, month, i, 23, 59, 59);
+
+                const dayTasks = assignments.filter(a => { 
+                    // Check Visibility
+                    if (calendarVisibility[a.className] === false) return false;
+
+                    const d = new Date(a.dueDate);
+                    if(a.allDay) {
+                         const parts = a.dueDate.split('-');
+                         return parseInt(parts[0]) === year && parseInt(parts[1]) === (month + 1) && parseInt(parts[2]) === i && !a.completed;
+                    }
+                    return d >= dayStart && d <= dayEnd && !a.completed; 
+                });
+                
+                dayTasks.forEach(t => { 
+                    const taskDiv = document.createElement('div'); 
+                    taskDiv.className = 'cal-task'; 
+                    taskDiv.innerText = t.title; 
+                    taskDiv.title = `${t.className}: ${t.title}`; 
+                    taskDiv.ondblclick = (e) => {
+                        e.stopPropagation();
+                        editAssignment(t.id);
+                    };
+                    // Prevent single click on task from triggering day filter
+                    taskDiv.onclick = (e) => {
+                        e.stopPropagation();
+                    };
+                    dayDiv.appendChild(taskDiv); 
+                });
+                calendarGrid.appendChild(dayDiv);
+            }
+        }
+        
+        function getMountainTimeISO(date) {
+             // Format: YYYY-MM-DDTHH:mm
+             const formatter = new Intl.DateTimeFormat('en-US', {
+                 timeZone: 'America/Denver',
+                 year: 'numeric', month: '2-digit', day: '2-digit',
+                 hour: '2-digit', minute: '2-digit', hour12: false
+             });
+             const parts = formatter.formatToParts(date);
+             const map = {};
+             parts.forEach(p => map[p.type] = p.value);
+             return `${map.year}-${map.month}-${map.day}T${map.hour}:${map.minute}`;
+        }
+
+        function setupTabs() { tabs.forEach(tab => { tab.addEventListener('click', () => { const target = tab.dataset.tab; switchTab(target); }); }); }
+        function switchTab(tabId) { 
+            // Clear filter if switching away from pending and back to reset view? 
+            // Let's keep it simple: only clear if switching TO pending from elsewhere
+            if (tabId === 'pending' && !document.querySelector('[data-tab="pending"]').classList.contains('active')) {
+                 // Optional: clearFilters(); 
+            }
+
+            tabs.forEach(t => t.classList.remove('active')); 
+            views.forEach(v => v.classList.remove('active')); 
+            document.querySelector(`[data-tab="${tabId}"]`).classList.add('active'); 
+            document.getElementById(tabId).classList.add('active'); 
+        }
+        
+        function setupSorting() {
+            document.getElementById('sort-date').addEventListener('click', () => { assignments.sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate)); renderPending(); });
+            document.getElementById('sort-priority').addEventListener('click', () => { const priorityMap = { 'Critical': 0, 'High': 1, 'Medium': 2, 'Low': 3 }; assignments.sort((a, b) => priorityMap[a.priority] - priorityMap[b.priority]); renderPending(); });
+            document.getElementById('clear-completed').addEventListener('click', () => { if (confirm('Clear all completed tasks?')) { assignments = assignments.filter(a => !a.completed); saveToLocal(); } });
+        }
+
+        function setupTimer() {
+            const startBtn = document.getElementById('timer-start'); const pauseBtn = document.getElementById('timer-pause'); const resetBtn = document.getElementById('timer-reset'); const saveSettingsBtn = document.getElementById('save-timer-settings');
+            const miniToggle = document.getElementById('mini-timer-toggle'); const miniReset = document.getElementById('mini-timer-reset');
+            startBtn.addEventListener('click', startTimer); pauseBtn.addEventListener('click', pauseTimer); resetBtn.addEventListener('click', () => resetTimer(true));
+            
+            miniToggle.addEventListener('click', () => { 
+                if (timerState.isRunning) pauseTimer(); 
+                else startTimer(); 
+            }); 
+            
+            miniReset.addEventListener('click', () => resetTimer(true));
+            saveSettingsBtn.addEventListener('click', () => { timerState.settings.work = parseInt(document.getElementById('work-duration').value); timerState.settings.shortBreak = parseInt(document.getElementById('short-break-duration').value); timerState.settings.longBreak = parseInt(document.getElementById('long-break-duration').value); saveTimerSettings(); alert('Timer settings saved!'); if (!timerState.isRunning) resetTimer(false); });
+            document.getElementById('work-duration').value = timerState.settings.work; document.getElementById('short-break-duration').value = timerState.settings.shortBreak; document.getElementById('long-break-duration').value = timerState.settings.longBreak;
+            updateTimerDisplay(); updatePhaseDisplay();
+        }
+
+        function startTimer() {
+            if (timerState.isRunning) return;
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            
+            timerState.isRunning = true;
+            
+            document.getElementById('timer-start').style.display = 'none'; 
+            document.getElementById('timer-pause').style.display = 'inline-block';
+            
+            const miniToggle = document.getElementById('mini-timer-toggle');
+            miniToggle.querySelector('.play-icon').style.display = 'none';
+            miniToggle.querySelector('.pause-icon').style.display = 'block';
+            miniToggle.style.background = 'var(--accent-color)';
+            
+            timerInterval = setInterval(() => { timerState.timeLeft--; updateTimerDisplay(); if (timerState.timeLeft <= 0) handleTimerComplete(); }, 1000);
+        }
+
+        function pauseTimer() { 
+            clearInterval(timerInterval); 
+            timerState.isRunning = false; 
+            
+            document.getElementById('timer-start').style.display = 'inline-block'; 
+            document.getElementById('timer-pause').style.display = 'none'; 
+            
+            const miniToggle = document.getElementById('mini-timer-toggle');
+            miniToggle.querySelector('.play-icon').style.display = 'block';
+            miniToggle.querySelector('.pause-icon').style.display = 'none';
+            miniToggle.style.background = 'var(--highlight)'; 
+        }
+        
+        function resetTimer(resetSession = false) {
+            pauseTimer();
+            if (timerState.mode === 'work') timerState.timeLeft = timerState.settings.work * 60; else if (timerState.mode === 'shortBreak') timerState.timeLeft = timerState.settings.shortBreak * 60; else if (timerState.mode === 'longBreak') timerState.timeLeft = timerState.settings.longBreak * 60;
+            updateTimerDisplay();
+        }
+
+        function handleTimerComplete() {
+            pauseTimer(); playNotificationSound();
+            if (timerState.mode === 'work') { timerState.sessionCount++; saveTimerSettings(); if (timerState.sessionCount % 4 === 0) switchMode('longBreak'); else switchMode('shortBreak'); } else switchMode('work');
+        }
+
+        function switchMode(mode) { timerState.mode = mode; resetTimer(); updatePhaseDisplay(); if (mode === 'work') alert('Break over! Ready to work?'); else alert('Work session complete! Take a break.'); }
+        function updateTimerDisplay() {
+            const minutes = Math.floor(timerState.timeLeft / 60); const seconds = timerState.timeLeft % 60; const timeStr = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            document.getElementById('timer-display').innerText = timeStr; document.getElementById('mini-timer-display').innerText = timeStr; document.title = `(${timeStr}) Command Center`;
+        }
+        function updatePhaseDisplay() {
+            const phaseEl = document.getElementById('timer-phase'); const countEl = document.getElementById('session-count');
+            if (timerState.mode === 'work') { phaseEl.innerText = 'Work Session'; phaseEl.style.color = '#e94560'; } else if (timerState.mode === 'shortBreak') { phaseEl.innerText = 'Short Break'; phaseEl.style.color = '#4caf50'; } else { phaseEl.innerText = 'Long Break'; phaseEl.style.color = '#2196f3'; }
+            countEl.innerText = `Sessions: ${timerState.sessionCount}/4`;
+        }
+        function playNotificationSound() {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+
+            const now = audioCtx.currentTime;
+            
+            const playBeep = (time) => {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                
+                osc.type = 'sine'; 
+                osc.frequency.setValueAtTime(880, time); 
+                osc.frequency.exponentialRampToValueAtTime(440, time + 0.1);
+                
+                gain.gain.setValueAtTime(0.3, time);
+                gain.gain.exponentialRampToValueAtTime(0.01, time + 0.1);
+                
+                osc.start(time);
+                osc.stop(time + 0.1);
+            };
+
+            playBeep(now);
+            playBeep(now + 0.2);
+            playBeep(now + 0.4);
+        }
+
+        function setupMusicPlayer() {
+            const playlist = [
+                {
+                    title: "Chillhop Stream",
+                    artist: "FluxFM",
+                    url: "https://fluxfm.streamabc.net/flx-chillhop-mp3-128-8581707?sABC=691r4n8r%230%235n3s88qsqp175p479no0590s780775q4%23fgernzf.syhksz.qr&aw_0_1st.playerid=streams.fluxfm.de&amsparams=playerid:streams.fluxfm.de;skey:1763592846"
+                }
+            ];
+            let currentTrackIndex = 0; const audio = new Audio(); let isPlaying = false;
+            const playPauseBtn = document.getElementById('play-pause'); 
+            
+            const rewindBtn = document.getElementById('rewind-btn');
+            const forwardBtn = document.getElementById('forward-btn');
+            
+            const seekSlider = document.getElementById('seek-slider'); 
+            const volumeSlider = document.getElementById('volume-slider'); 
+            const currentTimeEl = document.getElementById('current-time'); 
+            const durationEl = document.getElementById('duration'); 
+            const trackTitle = document.getElementById('track-title'); 
+            const trackArtist = document.getElementById('track-artist');
+
+            function loadTrack(index) { const track = playlist[index]; audio.src = track.url; trackTitle.innerText = track.title; trackArtist.innerText = track.artist; audio.load(); }
+            
+            function togglePlay() {
+                if (isPlaying) {
+                    audio.pause();
+                    playPauseBtn.querySelector('.play-icon').style.display = 'block';
+                    playPauseBtn.querySelector('.pause-icon').style.display = 'none';
+                } else {
+                    audio.play();
+                    playPauseBtn.querySelector('.play-icon').style.display = 'none';
+                    playPauseBtn.querySelector('.pause-icon').style.display = 'block';
+                }
+                isPlaying = !isPlaying;
+            }
+
+            playPauseBtn.addEventListener('click', togglePlay);
+            
+            rewindBtn.addEventListener('click', () => {
+                audio.currentTime = Math.max(0, audio.currentTime - 10);
+            });
+            
+            forwardBtn.addEventListener('click', () => {
+                audio.currentTime = Math.min(audio.duration, audio.currentTime + 10);
+            });
+
+            volumeSlider.addEventListener('input', (e) => audio.volume = e.target.value / 100);
+            seekSlider.addEventListener('input', (e) => { const seekTime = (audio.duration * e.target.value) / 100; audio.currentTime = seekTime; });
+            audio.addEventListener('timeupdate', () => {
+                const percent = (audio.currentTime / audio.duration) * 100; seekSlider.value = percent || 0;
+                const curMins = Math.floor(audio.currentTime / 60); const curSecs = Math.floor(audio.currentTime % 60); currentTimeEl.innerText = `${curMins}:${curSecs.toString().padStart(2, '0')}`;
+                if (audio.duration && isFinite(audio.duration)) { 
+                    const durMins = Math.floor(audio.duration / 60); const durSecs = Math.floor(audio.duration % 60); durationEl.innerText = `${durMins}:${durSecs.toString().padStart(2, '0')}`; 
+                } else {
+                    durationEl.innerText = "Live";
+                }
+            });
+            
+            loadTrack(0);
+        }
+
+        function setupImporter() {
+            const dropZone = document.getElementById('drop-zone'); const fileInput = document.getElementById('ics-input'); const cancelBtn = document.getElementById('cancel-import'); const confirmBtn = document.getElementById('confirm-import');
+            const selectAllCheckbox = document.getElementById('select-all-import');
+
+            dropZone.addEventListener('click', () => fileInput.click()); fileInput.addEventListener('change', (e) => handleFile(e.target.files[0]));
+            dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); }); dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+            dropZone.addEventListener('drop', (e) => { e.preventDefault(); dropZone.classList.remove('dragover'); if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]); });
+            cancelBtn.addEventListener('click', () => document.getElementById('import-modal').classList.remove('active')); confirmBtn.addEventListener('click', importSelectedEvents);
+            
+            selectAllCheckbox.addEventListener('change', (e) => {
+                const checkboxes = document.querySelectorAll('.import-checkbox');
+                checkboxes.forEach(cb => cb.checked = e.target.checked);
+            });
+        }
+
+        function handleFile(file) {
+            if (!file || !file.name.endsWith('.ics')) { alert('Please upload a valid .ics file'); return; }
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const jcalData = ICAL.parse(e.target.result); const comp = new ICAL.Component(jcalData); const vevents = comp.getAllSubcomponents('vevent');
+                    const candidates = vevents.map(vevent => { const event = new ICAL.Event(vevent); return { title: event.summary, start: event.startDate.toJSDate(), description: event.description, uid: event.uid }; });
+                    filterAndShowCandidates(candidates);
+                } catch (err) { console.error(err); alert('Error parsing ICS file. Make sure it is valid.'); }
+            }; reader.readAsText(file);
+        }
+
+        function importFromUrl() {
+            const urlInput = document.getElementById('cal-url-input').value;
+            if (!urlInput) return;
+            
+            const proxyUrl = 'https://corsproxy.io/?' + encodeURIComponent(urlInput);
+            
+            fetch(proxyUrl)
+                .then(res => {
+                    if (!res.ok) throw new Error('Network response was not ok');
+                    return res.text();
+                })
+                .then(text => {
+                    try {
+                        const jcalData = ICAL.parse(text); const comp = new ICAL.Component(jcalData); const vevents = comp.getAllSubcomponents('vevent');
+                        const candidates = vevents.map(vevent => { const event = new ICAL.Event(vevent); return { title: event.summary, start: event.startDate.toJSDate(), description: event.description, uid: event.uid }; });
+                        document.getElementById('url-import-modal').classList.remove('active');
+                        filterAndShowCandidates(candidates);
+                    } catch (err) { console.error(err); alert('Error parsing ICS file. The URL worked, but the file content is invalid.'); }
+                })
+                .catch(err => {
+                    console.error(err);
+                    const fallbackProxy = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(urlInput);
+                    if (confirm(`First proxy failed. Try backup proxy? Error: ${err.message}`)) {
+                         fetch(fallbackProxy)
+                            .then(res => res.text())
+                            .then(text => {
+                                try {
+                                    const jcalData = ICAL.parse(text); const comp = new ICAL.Component(jcalData); const vevents = comp.getAllSubcomponents('vevent');
+                                    const candidates = vevents.map(vevent => { const event = new ICAL.Event(vevent); return { title: event.summary, start: event.startDate.toJSDate(), description: event.description, uid: event.uid }; });
+                                    document.getElementById('url-import-modal').classList.remove('active');
+                                    filterAndShowCandidates(candidates);
+                                } catch (err) { alert('Error parsing ICS from backup proxy.'); }
+                            });
+                    }
+                });
+        }
+
+        function filterAndShowCandidates(events) {
+            const keywords = ['test', 'exam', 'quiz', 'due', 'assignment', 'project', 'class', 'midterm', 'final', 'paper', 'lab'];
+            const filtered = events.filter(e => e.start); 
+            if (filtered.length === 0) { alert('No valid events found in this calendar file.'); return; }
+            
+            const list = document.getElementById('import-list'); list.innerHTML = '';
+            document.getElementById('select-all-import').checked = true;
+            
+            filtered.forEach((e, index) => { 
+                const div = document.createElement('div'); 
+                div.className = 'import-item'; 
+                div.style.display = 'flex';
+                div.style.gap = '1rem';
+                div.style.alignItems = 'center';
+                div.style.padding = '0.5rem';
+                div.style.borderBottom = '1px solid rgba(255,255,255,0.1)';
+                
+                div.innerHTML = `
+                    <input type="checkbox" id="import-${index}" class="import-checkbox" checked>
+                    <label for="import-${index}" style="cursor:pointer; flex:1;">
+                        <strong style="display:block;">${e.title}</strong>
+                        <small style="color:var(--text-muted);">${e.start.toLocaleString()}</small>
+                    </label>
+                `; 
+                div.querySelector('input').dataset.event = JSON.stringify(e);
+                list.appendChild(div); 
+            });
+            document.getElementById('import-modal').classList.add('active');
+        }
+
+        function importSelectedEvents() {
+            const checkboxes = document.querySelectorAll('.import-checkbox:checked');
+            const classIndex = document.getElementById('import-target-class').value;
+            let className = 'Calendar Event';
+            
+            // Look up class name if selected
+            if(classIndex !== "" && grades[classIndex]) {
+                className = grades[classIndex].name;
+            }
+
+            let count = 0;
+            
+            checkboxes.forEach(cb => {
+                const event = JSON.parse(cb.dataset.event);
+                // Convert UTC to Mountain Time
+                const mtDateStr = getMountainTimeISO(new Date(event.start));
+                
+                const newAssignment = { 
+                    id: Date.now() + Math.floor(Math.random() * 1000), 
+                    className: className, 
+                    title: event.title, 
+                    dueDate: mtDateStr, 
+                    priority: 'Medium', 
+                    notes: event.description || '', 
+                    completed: false, 
+                    createdAt: new Date().toISOString() 
+                }; 
+                assignments.push(newAssignment); 
+                count++;
+            });
+            
+            saveToLocal(); 
+            document.getElementById('import-modal').classList.remove('active'); 
+            if (count > 0) {
+                alert(`Successfully imported ${count} assignments!`); 
+                switchTab('pending');
+            } else {
+                alert('No events selected.');
+            }
+        }
+
+        // AI Chat Setup
+        function setupAiChat() {
+            const sendBtn = document.getElementById('ai-send');
+            const input = document.getElementById('ai-input');
+            const attachBtn = document.getElementById('ai-attach-btn');
+            const fileInput = document.getElementById('ai-file-input');
+            const filePreview = document.getElementById('ai-file-preview');
+            const filenameEl = document.getElementById('ai-filename');
+            const removeFileBtn = document.getElementById('remove-file-btn');
+
+            // File Handling
+            attachBtn.addEventListener('click', () => fileInput.click());
+            
+            fileInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    // Store base64 data for later sending
+                    const base64String = event.target.result.split(',')[1]; // strip metadata
+                    aiAttachment = {
+                         mimeType: file.type,
+                         data: base64String
+                    };
+                    
+                    // Show preview UI
+                    filenameEl.innerText = file.name;
+                    filePreview.style.display = 'flex';
+                };
+                reader.readAsDataURL(file);
+            });
+            
+            removeFileBtn.addEventListener('click', () => {
+                aiAttachment = null;
+                fileInput.value = '';
+                filePreview.style.display = 'none';
+            });
+            
+            const handleSend = async () => {
+                const text = input.value.trim();
+                if (!text && !aiAttachment) return; // Don't send empty if no file either
+                
+                const container = document.getElementById('ai-chat-container');
+                
+                // Construct User Message Element
+                const userDiv = document.createElement('div');
+                userDiv.className = 'user-msg';
+                let userContent = text;
+                if (aiAttachment) {
+                    userContent += ` <br><small>📎 [Attachment: ${filenameEl.innerText}]</small>`;
+                }
+                userDiv.innerHTML = userContent;
+                container.appendChild(userDiv);
+                
+                input.value = '';
+                container.scrollTop = container.scrollHeight; 
+
+                const loadingDiv = document.createElement('div');
+                loadingDiv.className = 'ai-msg';
+                loadingDiv.textContent = 'Thinking...';
+                container.appendChild(loadingDiv);
+                container.scrollTop = container.scrollHeight;
+
+                let apiKey = localStorage.getItem('gemini_api_key');
+                if (!apiKey) {
+                    loadingDiv.textContent = 'Error: API Key not set. Please go to Settings and enter your Gemini API Key.';
+                    return;
+                }
+
+                try {
+                    let promptText = text || "Please analyze this attachment.";
+                    
+                    // Context injection if opened from specific task
+                    if (currentAiTask) {
+                        promptText = `Context: Student is asking about assignment "${currentAiTask.title}" for class "${currentAiTask.className}". Notes: ${currentAiTask.notes}. 
+                        User Query: ${promptText}. 
+                        Provide a helpful, encouraging response to help them study or plan.`;
+                    } else {
+                        promptText = `You are a friendly, encouraging student tutor AI. User Query: ${promptText}. Keep responses concise and helpful.`;
+                    }
+
+                    // Construct Payload parts
+                    const parts = [{ text: promptText }];
+                    
+                    // Add attachment if present
+                    if (aiAttachment) {
+                        parts.push({
+                            inlineData: {
+                                mimeType: aiAttachment.mimeType,
+                                data: aiAttachment.data
+                            }
+                        });
+                    }
+
+                    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ contents: [{ parts: parts }] })
+                    });
+
+                    const data = await response.json();
+                    
+                    if (data.error) throw new Error(data.error.message);
+                    
+                    const responseText = data.candidates[0].content.parts[0].text;
+                    const formatted = responseText
+                        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                        .replace(/\n/g, '<br>');
+                    
+                    loadingDiv.innerHTML = formatted;
+                    container.scrollTop = container.scrollHeight;
+                    
+                    // Clear attachment after sending
+                    aiAttachment = null;
+                    fileInput.value = '';
+                    filePreview.style.display = 'none';
+
+                } catch (error) {
+                    loadingDiv.innerHTML = `<span style="color: #ef4444;">Error: ${error.message}</span>`;
+                    if (error.message.includes('key') || error.message.includes('permission')) {
+                         loadingDiv.innerHTML += '<br>Please check your API Key in settings.';
+                    }
+                }
+            };
+
+            sendBtn.addEventListener('click', handleSend);
+            input.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') handleSend();
+            });
+        }
+
+        async function askAI(id) {
+            const task = assignments.find(a => a.id === id);
+            if (!task) return;
+            
+            currentAiTask = task;
+            
+            const modal = document.getElementById('ai-modal');
+            const container = document.getElementById('ai-chat-container');
+            
+            document.getElementById('ai-modal-title').innerHTML = `✨ AI Helper: ${task.title}`;
+            container.innerHTML = ''; 
+            
+            const intro = document.createElement('div');
+            intro.className = 'ai-msg';
+            intro.textContent = `I can help you with "${task.title}". Ask me for a study plan, explanation, or quiz!`;
+            container.appendChild(intro);
+            
+            modal.classList.add('active');
+        }
+
+        form.addEventListener('submit', addAssignment);
+    </script>
+</body>
+
+</html>
