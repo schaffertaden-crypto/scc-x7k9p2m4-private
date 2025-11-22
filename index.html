@@ -1721,6 +1721,46 @@
             localStorage.setItem('aiChatHistory', JSON.stringify(aiChatHistory));
             renderAll();
         }
+        function repairClassList() {
+    console.log("Repairing class list...");
+    
+    // 1. Find all unique class names currently used in your assignments
+    const activeClasses = [...new Set(assignments.map(t => t.className))];
+    
+    // 2. Get the list of classes you currently have in Settings
+    const existingClasses = grades.map(g => g.name);
+    
+    let addedCount = 0;
+
+    // 3. If an assignment uses a class that isn't in Settings, create it!
+    activeClasses.forEach(className => {
+        // Skip "Imported" if you don't want it to be a gradeable class
+        if (className === "Imported") return; 
+
+        if (!existingClasses.includes(className)) {
+            grades.push({
+                name: className,
+                categories: [
+                    { name: 'Homework', weight: 20, score: 100 },
+                    { name: 'Tests', weight: 30, score: 100 },
+                    { name: 'Quizzes', weight: 10, score: 100 },
+                    { name: 'Projects', weight: 20, score: 100 },
+                    { name: 'Final', weight: 20, score: 100 }
+                ]
+            });
+            addedCount++;
+        }
+    });
+
+    // 4. Save and Refresh if we made changes
+    if (addedCount > 0) {
+        saveGrades();
+        alert(`Fixed! Restored ${addedCount} missing classes (like "${activeClasses[0]}") to your Settings list.`);
+        location.reload(); // Refresh to show the changes
+    } else {
+        alert("Your class list is already in sync.");
+    }
+}
         function saveTimerSettings() { localStorage.setItem('timerSettings', JSON.stringify(timerState.settings)); localStorage.setItem('sessionCount', timerState.sessionCount); }
         function loadFromLocal() {
             const stored = localStorage.getItem('assignments');
@@ -3277,4 +3317,5 @@
 </body>
 
 </html>
+
 
